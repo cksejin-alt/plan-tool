@@ -166,6 +166,9 @@
   .rcx{font-size:11.5px;color:#9A3412;margin-top:4px;line-height:1.4}
   .colwrap{column-count:2;column-gap:10px} .colwrap table.n{break-inside:avoid;margin-bottom:8px;font-size:11px} .colwrap table.n td{padding:4px 6px} .colwrap table.n th{padding:5px 6px;font-size:10.5px}
   .keep{display:flex;flex-wrap:wrap;gap:6px} .keep span{background:var(--bg);border-radius:999px;padding:4px 10px;font-size:11px} .keep b{font-weight:800}
+  .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:5px 12px 5px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:184px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1.5px 4px;white-space:nowrap}
+  .rleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:-1px} .rl0{background:rgba(156,163,175,.45);border:1.5px dashed #6B7280} .rl1{background:var(--pink);border:2px solid var(--red)}
+  .rnote{margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--sub)}
   .s2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
   .s2col table.n{font-size:11px} .s2col table.n td{padding:4px 6px} .s2col table.n th{padding:5px 6px;font-size:10.5px}
   /* 빈 곳은 늘리기·벌리기 대신 정보로 채운다 (캡틴: 카드 안 공란 싫음) */
@@ -280,8 +283,8 @@ var DATA = {
   premiumAdd: 0,
   groups: [
     { icon: "💗", name: "가족 보장 (사망)", items: [
-      { n: "질병 사망", now: 0, rec: 0, add: 0 },
-      { n: "상해 사망", now: 0, rec: 0, add: 0, rider: "일반상해사망(기본계약)" },
+      { n: "질병 사망", s: "질병사망", now: 0, rec: 0, add: 0 },
+      { n: "상해 사망", s: "상해사망", now: 0, rec: 0, add: 0, rider: "일반상해사망(기본계약)" },
       { n: "상해 80% 이상 후유장해", now: 0, rec: 0, add: 0, rider: "일반상해80%이상후유장해" } ]},
     { icon: "🩺", name: "큰 병 보장 (진단비)", items: [
       { n: "일반암 진단비", now: 0, rec: 0, add: 0, rider: "암진단비(유사암제외)" },
@@ -312,7 +315,7 @@ var DATA = {
       { n: "질병 3종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
       { n: "질병 4종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
       { n: "질병 5종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
-      { n: "질병 수술비", now: 0, rec: 0, add: 0, rider: "질병수술비" },
+      { n: "질병 수술비", s: "질병수술", now: 0, rec: 0, add: 0, rider: "질병수술비" },
       { n: "상급종합병원 질병수술비", now: 0, rec: 0, add: 0, rider: "상급종합병원 질병수술비", hosp: true },
       { n: "질병 1~5종 수술비 plus (연 2회째부터)", now: 0, rec: 0, add: 0, rider: "질병 1-5종 수술비(plus)(연간 2회 이상)" },
       { n: "상해 1종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
@@ -320,7 +323,7 @@ var DATA = {
       { n: "상해 3종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
       { n: "상해 4종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
       { n: "상해 5종 수술비", now: 0, rec: 0, add: 0, rider: "수술비Ⅱ(1-5종)" },
-      { n: "상해 수술비", now: 0, rec: 0, add: 0, rider: "상해수술비" },
+      { n: "상해 수술비", s: "상해수술", now: 0, rec: 0, add: 0, rider: "상해수술비" },
       { n: "상급종합병원 상해수술비", now: 0, rec: 0, add: 0, rider: "상급종합병원 상해수술비", hosp: true },
       { n: "130대 질병수술비 (11가지)", now: 0, rec: 0, add: 0, rider: "130대질병수술비" } ]},
     { icon: "🛏️", name: "입원일당", items: [
@@ -330,10 +333,10 @@ var DATA = {
       { n: "종합병원 2-3인실 질병입원일당", sub: "하루", now: 0, rec: 0, add: 0, rider: "2-3인실 종합병원 질병입원일당(1일이상 30일한도)" },
       { n: "상해 입원일당 (1인실·2-3인실)", sub: "하루", now: 0, rec: 0, add: 0, rider: "상해 입원일당" } ]},
     { icon: "🚗", name: "운전자·생활 보장", items: [
-      { n: "교통사고 처리지원금", now: 0, rec: 0, add: 0 },
-      { n: "변호사 선임비용", now: 0, rec: 0, add: 0 },
+      { n: "교통사고 처리지원금", s: "처리지원", now: 0, rec: 0, add: 0 },
+      { n: "변호사 선임비용", s: "변호사", now: 0, rec: 0, add: 0 },
       { n: "벌금 (대인)", now: 0, rec: 0, add: 0 },
-      { n: "일상생활 배상책임", now: 0, rec: 0, add: 0 },
+      { n: "일상생활 배상책임", s: "배상책임", now: 0, rec: 0, add: 0 },
       { n: "가족일상생활중 배상책임 (갱신형)", now: 0, rec: 0, add: 0, rider: "갱신형 가족일상생활중배상책임(Ⅳ) — 실손형이라 여러 개여도 실제 손해만큼 나눠 받아요" },
       { n: "골절 진단비", now: 0, rec: 0, add: 0, rider: "골절진단비Ⅱ" },
       { n: "치아 보철치료비", now: 0, rec: 0, add: 0 } ]}
@@ -565,6 +568,92 @@ var SHARE = {
   src: "질병관리청 「2026년 시도 심뇌혈관질환 예방관리사업 안내」(자료원: 심평원·건보공단 2024 건강보험 통계연보)"
 };
 
+// 담보군 그래프: 담보를 4개 군의 축으로 묶는다. table은 보장분석 현황표에 합계가 있는 축 → '그 밖의 현재 보장'에서 다시 더하지 않는다.
+var COV_PANELS = [
+  { t: "사망·후유장해", axes: [
+    { k: "dd", n: "질병 사망", s: "질병사망", table: 1 }, { k: "ad", n: "상해 사망", s: "상해사망", table: 1 }, { k: "dh", n: "질병 후유장해", s: "질병후유" }, { k: "ah", n: "상해 후유장해", s: "상해후유" } ]},
+  { t: "3대 진단 및 치료비", axes: [
+    { k: "c1", n: "일반암 진단", s: "일반암", table: 1 }, { k: "c2", n: "유사암 진단", s: "유사암", table: 1 }, { k: "ct", n: "암 치료비", s: "암 치료" }, { k: "b1", n: "뇌혈관 진단", s: "뇌혈관", table: 1 }, { k: "b2", n: "뇌졸중 진단", s: "뇌졸중", table: 1 },
+    { k: "b3", n: "뇌출혈 진단", s: "뇌출혈", opt: 1 }, { k: "h1", n: "허혈성심장 진단", s: "허혈성", table: 1 }, { k: "h2", n: "급성심근경색 진단", s: "심근경색", table: 1 }, { k: "bt", n: "뇌·심장 치료비", s: "뇌·심 치료" } ]},
+  { t: "실손의료비·수술·입원", axes: [
+    { k: "m1", n: "질병 입원(실손)", s: "질병입원", table: 1 }, { k: "m2", n: "질병 통원(실손)", s: "질병통원", table: 1 }, { k: "m3", n: "상해 입원(실손)", s: "상해입원", table: 1 }, { k: "m4", n: "상해 통원(실손)", s: "상해통원", table: 1 },
+    { k: "sd", n: "질병 수술비", s: "질병수술" }, { k: "sa", n: "상해 수술비", s: "상해수술" }, { k: "dy", n: "입원일당(하루)", s: "입원일당", max: 1 } ]},
+  { t: "운전자·기타 비용", axes: [
+    { k: "t1", n: "교통사고 처리지원금", s: "처리지원" }, { k: "t2", n: "변호사 선임비용", s: "변호사" }, { k: "t3", n: "벌금", s: "벌금" }, { k: "t4", n: "자동차사고 부상치료비", s: "부상치료" }, { k: "l1", n: "일상생활 배상책임", s: "배상책임" }, { k: "o1", n: "치아 치료비", s: "치아" }, { k: "o2", n: "골절·화상", s: "골절·화상" }, { k: "o9", n: "그 밖의 담보", s: "기타", opt: 1 } ]}
+];
+function covAxis(n){
+  var s = n.replace(/\s/g, "");
+  if (/후유/.test(s)) return /상해질병|질병상해/.test(s) ? ["dh", "ah"] : /질병/.test(s) ? ["dh"] : ["ah"];
+  if (/사망/.test(s)) return /질병/.test(s) ? ["dd"] : ["ad"];
+  if (/실손|의료비|처방조제/.test(s)) return /통원|처방/.test(s) ? [/^상해통원/.test(s) ? "m4" : "m2"] : [/^상해입원/.test(s) ? "m3" : "m1"];
+  if (/진단/.test(s)) {
+    if (/유사암|소액암|갑상선|대장점막/.test(s)) return ["c2"];
+    if (/일반암|^암진단|재진단|통합암/.test(s)) return ["c1"];
+    if (/뇌혈관/.test(s)) return ["b1"];
+    if (/뇌졸중/.test(s)) return ["b2"];
+    if (/뇌출혈/.test(s)) return ["b3"];
+    if (/허혈/.test(s)) return ["h1"];
+    if (/심근경색/.test(s)) return ["h2"];
+    if (/골절|화상/.test(s)) return ["o2"];
+    return ["o9"];
+  }
+  if (/암|중입자/.test(s)) return ["ct"];
+  if (/순환계|혈전|2대질환|뇌혈관|뇌졸중|뇌출혈|뇌경색|허혈|심근경색|심장/.test(s)) return ["bt"];
+  if (/수술/.test(s)) return /상해|골절|재해/.test(s) ? ["sa"] : ["sd"];
+  if (/일당|입원/.test(s)) return ["dy"];
+  if (/처리지원/.test(s)) return ["t1"];
+  if (/변호사/.test(s)) return ["t2"];
+  if (/벌금/.test(s)) return ["t3"];
+  if (/배상/.test(s)) return ["l1"];
+  if (/부상치료/.test(s)) return ["t4"];
+  if (/치아|보철|임플란트/.test(s)) return ["o1"];
+  if (/골절|화상/.test(s)) return ["o2"];
+  return ["o9"];
+}
+function covAxesData(){
+  var other = {}, by = {};
+  M.d.groups.forEach(function(g){ if (/그 밖의 현재 보장/.test(g.name)) g.items.forEach(function(it){ other[it.n] = 1; }); });
+  COV_PANELS.forEach(function(p){ p.axes.forEach(function(a){ by[a.k] = { a: a, items: [] }; }); });
+  M.all.forEach(function(it){
+    if (!(+it.now > 0 || +it.add > 0)) return;
+    covAxis(it.n).forEach(function(k){ var x = by[k]; if (other[it.n] && x.a.table && !/재진단/.test(it.n)) return; x.items.push(it); });
+  });
+  // 1~5종 수술비는 수술 한 번에 하나만 해당하므로 가장 큰 금액만, 입원일당도 가장 큰 하루 금액만 센다
+  var total = function(x, f){
+    var tier = 0, sum = 0;
+    x.items.forEach(function(it){ var v = f(it); if (x.a.max || /[1-5]종 수술비$/.test(it.n)) tier = Math.max(tier, v); else sum += v; });
+    return sum + tier;
+  };
+  Object.keys(by).forEach(function(k){ var x = by[k]; x.now = total(x, function(it){ return +it.now || 0; }); x.aft = total(x, function(it){ return (+it.now || 0) + (+it.add || 0); }); });
+  return by;
+}
+function covRadar(p, by){
+  var ax = p.axes.map(function(a){ return by[a.k]; }).filter(function(x){ return !x.a.opt || x.aft > 0; }), n = ax.length, W = 280, H = 184, cx = W / 2, cy = H / 2, R = 62;
+  var top = Math.max.apply(null, ax.map(function(x){ return x.aft; })) || 1;
+  var pt = function(i, r){ var t = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(t), cy + r * Math.sin(t)]; };
+  var at = function(i, v){ return pt(i, R * Math.sqrt(v / top)); }; // 일당과 억 단위가 같은 표에 있어 제곱근 눈금을 쓴다
+  var poly = function(f){ return ax.map(function(x, i){ return f(x, i).map(function(c){ return c.toFixed(1); }).join(","); }).join(" "); };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(p.t) + ' 담보군 그래프">';
+  [0.25, 0.5, 0.75, 1].forEach(function(q){ s += '<polygon points="' + poly(function(x, i){ return pt(i, R * q); }) + '" fill="none" stroke="#E2E4E8" stroke-width="1"/>'; });
+  ax.forEach(function(x, i){ var e = pt(i, R); s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0].toFixed(1) + '" y2="' + e[1].toFixed(1) + '" stroke="#E2E4E8" stroke-width="1"/>'; });
+  s += '<polygon points="' + poly(function(x, i){ return at(i, x.aft); }) + '" fill="#FBEAEC" fill-opacity=".85" stroke="#B11226" stroke-width="2" stroke-linejoin="round"/>';
+  s += '<polygon points="' + poly(function(x, i){ return at(i, x.now); }) + '" fill="#9CA3AF" fill-opacity=".35" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round"/>';
+  ax.forEach(function(x, i){
+    var d = at(i, x.aft), l = pt(i, R + 7), dx = l[0] - cx, dy = l[1] - cy, anc = Math.abs(dx) < 10 ? "middle" : dx > 0 ? "start" : "end";
+    if (x.aft > 0) s += '<circle cx="' + d[0].toFixed(1) + '" cy="' + d[1].toFixed(1) + '" r="3.5" fill="#B11226" stroke="#fff" stroke-width="1"/>';
+    s += '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + (dy > 20 ? 9 : dy < -20 ? -1 : 4)).toFixed(1) + '" text-anchor="' + anc + '" font-size="11" font-weight="700" fill="#1F2328">' + esc(x.a.s) + '</text>';
+  });
+  var rows = ax.map(function(x){
+    var tip = x.items.length ? x.items.map(function(it){ return it.n + " " + won((+it.now || 0) + (+it.add || 0)); }).join(", ") : "가입 없음";
+    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + '</td><td>' + (x.now ? won(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td></tr>';
+  }).join('');
+  return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th></tr>' + rows + '</table></div></div>';
+}
+function covCharts(){
+  var by = covAxesData();
+  return '<div class="st"><h2>🛡️ 담보군별 보장 한눈에</h2><small class="rleg"><i class="rl0"></i>현재 <i class="rl1"></i>가입 후</small></div><div class="rgrid">' + COV_PANELS.map(function(p){ return covRadar(p, by); }).join('') + '</div>'
+    + '<div class="rnote">그래프는 바깥쪽일수록 금액이 커요. 칸마다 눈금이 달라 금액은 표로 비교해 주세요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>';
+}
 function won(m){ m = Math.round(+m || 0); if (m === 0) return "0원"; if (m < 0) return "−" + won(-m); var e = Math.floor(m / 10000), r = m % 10000, s = ""; if (e) s += e + "억"; if (r) s += (s ? " " : "") + r.toLocaleString("ko-KR") + "만"; return s + "원"; }
 function wonFull(w){ return (Math.round(+w || 0)).toLocaleString("ko-KR") + "원"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -710,7 +799,7 @@ function renderSum(){
   var glChunks = [];
   gl.forEach(function(x){ for (var ci = 0; ci < x.rows.length; ci += 8) glChunks.push({ g: ci ? { icon: x.g.icon, name: x.g.name + ' (이어서)' } : x.g, rows: x.rows.slice(ci, ci + 8) }); });
   h += '<div class="st"><h2>📋 이번에 제안하는 담보 ' + M.grown.length + '가지</h2><small>가입금액 · 지급 방식</small></div><div class="colwrap">' + glChunks.map(function(x){ return tbl([x]); }).join('') + '</div>';
-  if (keep.length) h += '<div class="st"><h2>🛡️ 현재 보험에서 그대로 유지되는 보장</h2></div><div class="keep">' + keep.map(function(it){ return '<span>' + esc(it.n) + ' <b>' + won(it.now) + '</b></span>'; }).join('') + '</div>';
+  h += covCharts();
   h += '<div class="warn"><b>꼭 확인해 주세요</b> · 현재 보험은 그대로 두고 비어 있는 곳을 채우는 기준이에요. · 🏥는 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 나와요. · 가입 후 90일·1년 안에는 줄어드는 담보가 있어요. · 기존 보험을 해지하고 바꾸면 해지환급금 손해·보험료 상승·보장 공백이 생길 수 있어요.</div>';
   h += foot(2) + '</div>';
   document.getElementById("vSum").innerHTML = h;
