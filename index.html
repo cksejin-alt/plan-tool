@@ -239,8 +239,9 @@
   @media print{
     body{background:#fff} .bar,.nav,.panel,.pbox{display:none!important}
     .page{margin:0;box-shadow:none;border-radius:0;zoom:.93}
-    .stage{height:auto;display:block}
-    .slide{position:relative!important;transform:none!important;box-shadow:none;border-radius:0;break-after:page;margin:0 auto}
+    .stage{height:auto;display:block;overflow:visible}
+    .slide{position:relative!important;transform:none!important;box-shadow:none;border-radius:0;break-after:page;break-inside:avoid;margin:0 auto;zoom:.88} /* 900×1273 → A4(794×1123) 한 장 */
+    .slide:last-child{break-after:auto}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
 </style>
