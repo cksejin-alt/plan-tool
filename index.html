@@ -166,9 +166,11 @@
   .rcx{font-size:11.5px;color:#9A3412;margin-top:4px;line-height:1.4}
   .colwrap{column-count:2;column-gap:10px} .colwrap table.n{break-inside:avoid;margin-bottom:8px;font-size:11px} .colwrap table.n td{padding:4px 6px} .colwrap table.n th{padding:5px 6px;font-size:10.5px}
   .keep{display:flex;flex-wrap:wrap;gap:6px} .keep span{background:var(--bg);border-radius:999px;padding:4px 10px;font-size:11px} .keep b{font-weight:800}
-  .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:5px 12px 5px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:184px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1.5px 4px;white-space:nowrap} .rtb td.rb{color:var(--sub);font-size:10px}
+  .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:3px 12px 3px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:150px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1px 4px;white-space:nowrap} .rtb td.rb{color:var(--sub);font-size:10px}
   .rleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:-1px} .rl0{background:rgba(156,163,175,.45);border:1.5px dashed #6B7280} .rl1{background:var(--pink);border:2px solid var(--red)}
   .rnote{margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--sub)}
+  .care{width:100%;border-collapse:collapse;font-size:11px} .care th{background:var(--bg);font-weight:800;padding:5px 6px;border:1px solid var(--line);text-align:center} .care th small{display:block;font-weight:500;color:var(--sub);font-size:9.5px} .care td{border:1px solid var(--line);padding:4px 6px;vertical-align:top} .care td div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:2px 0} .care td b{color:var(--red)} .care td small{color:var(--sub);font-size:9.5px} .care td.cn{text-align:center;color:var(--sub)} .care .cp{font-size:9.5px;font-weight:700;background:#EEF2FF;color:#3730A3;border-radius:5px;padding:0 5px} .care .cp.l{background:#FEF3C7;color:#92400E}
+  .care0{border:1px dashed var(--pink2);border-radius:10px;padding:8px 12px;font-size:11.5px;color:var(--red);background:#FFFBFB}
   .s2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
   .s2col table.n{font-size:11px} .s2col table.n td{padding:4px 6px} .s2col table.n th{padding:5px 6px;font-size:10.5px}
   /* 빈 곳은 늘리기·벌리기 대신 정보로 채운다 (캡틴: 카드 안 공란 싫음) */
@@ -587,6 +589,7 @@ var COV_PANELS = [
 ];
 function covAxis(n){
   var s = n.replace(/\s/g, "");
+  if (careParse(n)) return [];
   if (/후유/.test(s)) return /상해질병|질병상해/.test(s) ? ["dh", "ah"] : /질병/.test(s) ? ["dh"] : ["ah"];
   if (/사망/.test(s)) return /질병/.test(s) ? ["dd"] : ["ad"];
   if (/실손|의료비|처방조제/.test(s)) return /통원|처방/.test(s) ? [/^상해통원/.test(s) ? "m4" : "m2"] : [/^상해입원/.test(s) ? "m3" : "m1"];
@@ -634,7 +637,7 @@ function covAxesData(){
   return by;
 }
 function covRadar(p, by){
-  var ax = p.axes.map(function(a){ return by[a.k]; }).filter(function(x){ return !x.a.opt || x.aft > 0; }), n = ax.length, W = 280, H = 184, cx = W / 2, cy = H / 2, R = 62;
+  var ax = p.axes.map(function(a){ return by[a.k]; }).filter(function(x){ return !x.a.opt || x.aft > 0; }), n = ax.length, W = 280, H = 150, cx = W / 2, cy = H / 2, R = 50;
   var pt = function(i, r){ var t = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(t), cy + r * Math.sin(t)]; };
   var at = function(i, v){ return pt(i, R * Math.min(1, v / ax[i].a.b)); }; // 바깥 테두리 = 기준 금액, 넘으면 테두리에 멈춘다
   var poly = function(f){ return ax.map(function(x, i){ return f(x, i).map(function(c){ return c.toFixed(1); }).join(","); }).join(" "); };
@@ -647,7 +650,7 @@ function covRadar(p, by){
   ax.forEach(function(x, i){
     var d = at(i, x.aft), l = pt(i, R + 7), dx = l[0] - cx, dy = l[1] - cy, anc = Math.abs(dx) < 10 ? "middle" : dx > 0 ? "start" : "end";
     if (x.aft > 0) s += '<circle cx="' + d[0].toFixed(1) + '" cy="' + d[1].toFixed(1) + '" r="3.5" fill="#B11226" stroke="#fff" stroke-width="1"/>';
-    s += '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + (dy > 20 ? 9 : dy < -20 ? -1 : 4)).toFixed(1) + '" text-anchor="' + anc + '" font-size="11" font-weight="700" fill="#1F2328">' + esc(x.a.s) + '</text>';
+    s += '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + (dy > 20 ? 9 : dy < -20 ? -1 : 4)).toFixed(1) + '" text-anchor="' + anc + '" font-size="10.5" font-weight="700" fill="#1F2328">' + esc(x.a.s) + '</text>';
   });
   var rows = ax.map(function(x){
     var tip = x.items.length ? x.items.map(function(it){ return it.n + " " + won((+it.now || 0) + (+it.add || 0)); }).join(", ") : "가입 없음";
@@ -658,7 +661,38 @@ function covRadar(p, by){
 function covCharts(){
   var by = covAxesData();
   return '<div class="st"><h2>🛡️ 담보군별 보장 한눈에</h2><small class="rleg"><i class="rl0"></i>현재 <i class="rl1"></i>가입 후</small></div><div class="rgrid">' + COV_PANELS.map(function(p){ return covRadar(p, by); }).join('') + '</div>'
-    + '<div class="rnote">그래프 바깥 테두리가 표의 \'기준\' 금액이에요. 기준을 채우면 테두리에 닿고, 넘어도 테두리에서 멈춰요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>';
+    + '<div class="rnote">그래프 바깥 테두리가 표의 \'기준\' 금액이에요. 기준을 채우면 테두리에 닿고, 넘어도 테두리에서 멈춰요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>' + careBox();
+}
+// 간병인 보장: 담보 이름에서 사용·지원 / 질병·상해 / 일반병원·요양병원 / 보장 기간을 읽어 표로 보여 준다 (통합간편2610 약관 담보 이름 기준)
+function careParse(n){
+  var s = n.replace(/\s/g, "");
+  if (!/간병/.test(s) || /치매|비용지원|페이백/.test(s)) return null;
+  var kind = /간병인지원|지원일당/.test(s) ? "sup" : /간병인사용|사용일당/.test(s) ? "use" : /간호.?간병통합|간간통/.test(s) ? "nis" : null;
+  if (!kind) return null;
+  var who = /상해|재해/.test(s) ? "inj" : "dis";
+  var hosp = /요양병원제외|요양,정신,한방병원제외/.test(s) ? "gen" : /\(요양병원\)/.test(s) ? "nh" : "both";
+  if (kind === "use" && hosp === "both") hosp = "gen";
+  var per = /181일이상/.test(s) ? "181" : /30일한도/.test(s) ? "30" : /180일한도/.test(s) ? "180" : "";
+  return { kind: kind, who: who, hosp: hosp, per: per, add: /사용추가보장/.test(s), yo: /요양성특정질병/.test(s) };
+}
+function careBox(){
+  var cells = {}, any = false;
+  M.all.forEach(function(it){
+    var v = (+it.now || 0) + (+it.add || 0), p = careParse(it.n); if (!p || !(v > 0)) return;
+    var col = p.kind === "use" ? (p.hosp === "nh" ? "useNh" : "useGen") : p.kind === "sup" ? "sup" : "nis", key = p.who + "|" + col;
+    (cells[key] = cells[key] || []).push({ v: v, now: +it.now || 0, p: p }); any = true;
+  });
+  var perTxt = { "30": "1~30일", "180": "1~180일", "181": "181일~", "": "기간 확인" };
+  var cell = function(who, col){
+    var xs = cells[who + "|" + col]; if (!xs) return '<td class="cn">-</td>';
+    xs.sort(function(a, b){ return (a.p.per === "181") - (b.p.per === "181"); });
+    return '<td>' + xs.map(function(x){ return '<div><span class="cp' + (x.p.per === "181" ? ' l' : '') + '">' + perTxt[x.p.per] + '</span><b>' + won(x.v) + '</b>' + (x.p.add ? '<small>간호간병 병동 추가</small>' : '') + (x.p.yo ? '<small>요양성 특정질병</small>' : '') + (x.now ? '<small>현재 ' + curW(x.now) + '</small>' : '') + '</div>'; }).join('') + '</td>';
+  };
+  var h = '<div class="st"><h2>🧑‍⚕️ 간병인 보장</h2><small>하루 금액 · 가입 후</small></div>';
+  if (!any) return h + '<div class="care0">간병인 보장(사용일당·지원일당)이 없어요. 입원해서 간병인을 쓰면 그 비용은 본인이 내야 해요.</div>';
+  h += '<table class="care"><tr><th rowspan="2"></th><th colspan="2">간병인 사용일당<small>직접 쓰고 청구</small></th><th rowspan="2">간병인 지원일당<small>회사가 간병인 보내 줌<br>일반·요양병원 모두</small></th><th rowspan="2">간호·간병통합<small>보호자 없는 병동</small></th></tr><tr><th>일반병원</th><th>요양병원</th></tr>';
+  [["dis", "질병"], ["inj", "상해"]].forEach(function(w){ h += '<tr><th>' + w[1] + '</th>' + cell(w[0], "useGen") + cell(w[0], "useNh") + cell(w[0], "sup") + cell(w[0], "nis") + '</tr>'; });
+  return h + '</table><div class="rnote">1~180일 = 한 번 입원에 180일까지, 181일~ = 181일째부터 이어서 보장. 지원일당 181일 이상은 요양·정신·한방병원 입원은 빠져요. 실제 지급 조건은 약관을 따라요.</div>';
 }
 // 제안 담보 표: 회사 담보 묶음 대신 진단비·치료비·상해 수술비·질병 수술비처럼 같은 종류끼리 모은다
 var PROP_GROUPS = [
@@ -667,6 +701,7 @@ var PROP_GROUPS = [
   { icon: "🩹", name: "상해 수술비", re: /상해.*수술|수술.*상해/ },
   { icon: "🔪", name: "질병 수술비", re: /수술/ },
   { icon: "💊", name: "치료비 모음", re: /치료비|항암|방사선|혈전/ },
+  { icon: "🧑‍⚕️", name: "간병·치매", re: /간병|치매|장기요양|요양등급|파킨슨/, first: 1 },
   { icon: "🛌", name: "입원일당", re: /일당/ },
   { icon: "🏥", name: "실손의료비", re: /실손/ },
   { icon: "🚗", name: "운전자·생활", re: /교통|변호사|벌금|배상|자동차|치아|골절|화상/ },
@@ -676,7 +711,8 @@ function propGroups(d){
   var out = PROP_GROUPS.map(function(g){ return { g: g, rows: [] }; });
   d.groups.forEach(function(g){ g.items.forEach(function(it){
     if (!(+it.add > 0)) return;
-    for (var i = 0; i < PROP_GROUPS.length; i++) if (PROP_GROUPS[i].re.test(it.n)) { out[i].rows.push(it); return; }
+    var order = PROP_GROUPS.map(function(g, i){ return i; }).sort(function(a, b){ return (PROP_GROUPS[b].first || 0) - (PROP_GROUPS[a].first || 0) || a - b; });
+    for (var oi = 0; oi < order.length; oi++) { var i = order[oi]; if (PROP_GROUPS[i].re.test(it.n)) { out[i].rows.push(it); return; } }
   }); });
   return out.filter(function(x){ return x.rows.length; });
 }
@@ -1009,7 +1045,30 @@ function fillGaps(){
   function contentH0(el){ var k = el.getBoundingClientRect().height / el.offsetHeight || 1, h = 0; [].forEach.call(el.children, function(c){ if (getComputedStyle(c).position !== 'absolute') h += c.getBoundingClientRect().height / k + parseFloat(getComputedStyle(c).marginTop) + parseFloat(getComputedStyle(c).marginBottom); }); return h; }
   // 요약형: 담보 목록이 넘치면 다음 쪽을 만들어 뒤쪽 분야부터 넘긴다
   for (var pg = document.querySelector('#vSum .page'), np; pg; pg = pg.nextElementSibling) (function(pg){
-    var cw = pg.querySelector('.colwrap'); if (!cw || contentH0(pg) <= roomS()) return;
+    if (contentH0(pg) <= roomS()) return;
+    var cw = pg.querySelector('.colwrap'), rg = pg.querySelector('.rgrid');
+    if (!cw && rg) { // 담보군 그래프 쪽이 조금(130px 안) 넘치면 그래프를 살짝 줄여 한 쪽에 맞춘다
+      if (contentH0(pg) - roomS() <= 130) {
+        var lo = 0.8, hi = 1, rw = rg.offsetWidth;
+        for (var z = 0; z < 8; z++) { var s = (lo + hi) / 2; rg.style.zoom = s; rg.style.width = (rw / s) + 'px'; if (contentH0(pg) <= roomS()) lo = s; else hi = s; }
+        rg.style.zoom = lo; rg.style.width = (rw / lo) + 'px';
+        if (contentH0(pg) <= roomS()) return;
+        rg.style.zoom = ''; rg.style.width = '';
+      }
+      // 그래도 넘치면 맨 아래 내용부터 하나씩(그래프는 한 칸씩) 다음 쪽으로
+      np = document.createElement('div'); np.className = 'page';
+      np.innerHTML = pg.querySelector('.ph').outerHTML + pg.querySelector('.pf').outerHTML;
+      pg.parentNode.insertBefore(np, pg.nextSibling);
+      var top = function(el){ np.insertBefore(el, np.querySelector('.ph').nextElementSibling); }, nrg = null, g2 = 0;
+      while (contentH0(pg) > roomS() && g2++ < 40) {
+        var last = pg.querySelector('.pf').previousElementSibling; if (!last || last.classList.contains('ph')) break;
+        if (last === rg && rg.children.length > 1) { if (!nrg) { nrg = document.createElement('div'); nrg.className = 'rgrid'; top(nrg); } nrg.insertBefore(rg.lastElementChild, nrg.firstChild); continue; }
+        top(last);
+      }
+      if (nrg) nrg.insertAdjacentHTML('beforebegin', '<div class="st"><h2>🛡️ 담보군별 보장 (이어서)</h2></div>');
+      return;
+    }
+    if (!cw) return;
     np = document.createElement('div'); np.className = 'page';
     np.innerHTML = pg.querySelector('.ph').outerHTML + '<div class="st"><h2>📋 제안 담보 (이어서)</h2></div><div class="colwrap"></div>' + pg.querySelector('.pf').outerHTML;
     pg.parentNode.insertBefore(np, pg.nextSibling);
