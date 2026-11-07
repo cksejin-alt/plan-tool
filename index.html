@@ -656,6 +656,26 @@ function covCharts(){
   return '<div class="st"><h2>🛡️ 담보군별 보장 한눈에</h2><small class="rleg"><i class="rl0"></i>현재 <i class="rl1"></i>가입 후</small></div><div class="rgrid">' + COV_PANELS.map(function(p){ return covRadar(p, by); }).join('') + '</div>'
     + '<div class="rnote">그래프는 바깥쪽일수록 금액이 커요. 칸마다 눈금이 달라 금액은 표로 비교해 주세요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>';
 }
+// 제안 담보 표: 회사 담보 묶음 대신 진단비·치료비·상해 수술비·질병 수술비처럼 같은 종류끼리 모은다
+var PROP_GROUPS = [
+  { icon: "💗", name: "사망·후유장해", re: /사망|후유/ },
+  { icon: "🩺", name: "진단비", re: /진단/ },
+  { icon: "🩹", name: "상해 수술비", re: /상해.*수술|수술.*상해/ },
+  { icon: "🔪", name: "질병 수술비", re: /수술/ },
+  { icon: "💊", name: "치료비 모음", re: /치료비|항암|방사선|혈전/ },
+  { icon: "🛌", name: "입원일당", re: /일당/ },
+  { icon: "🏥", name: "실손의료비", re: /실손/ },
+  { icon: "🚗", name: "운전자·생활", re: /교통|변호사|벌금|배상|자동차|치아|골절|화상/ },
+  { icon: "➕", name: "그 밖의 제안 담보", re: /./ }
+];
+function propGroups(d){
+  var out = PROP_GROUPS.map(function(g){ return { g: g, rows: [] }; });
+  d.groups.forEach(function(g){ g.items.forEach(function(it){
+    if (!(+it.add > 0)) return;
+    for (var i = 0; i < PROP_GROUPS.length; i++) if (PROP_GROUPS[i].re.test(it.n)) { out[i].rows.push(it); return; }
+  }); });
+  return out.filter(function(x){ return x.rows.length; });
+}
 // PDF를 하나만 넣었을 때: 없는 쪽은 0이 아니라 '확인 전'으로 보인다
 function curW(v){ return M.d.noAna ? "확인 전" : won(v); }
 function curP(d){ return M.d.noAna ? "확인 전" : wonFull(d.premiumNow); }
@@ -791,7 +811,7 @@ function renderSum(){
   h += '<div class="page">' + head('담보 비교');
   h += surgTable(false);
   // 담보 목록을 두 칸으로: 줄 수가 반씩 되도록 분야 단위로 나눈다 (풀담보도 한 장 안에)
-  var gl = d.groups.map(function(g){ return { g: g, rows: g.items.filter(function(it){ return +it.add > 0; }) }; }).filter(function(x){ return x.rows.length; });
+  var gl = propGroups(d);
   var keep = M.all.filter(function(it){ return +it.now > 0 && !(+it.add > 0); });
   var totalRows = gl.reduce(function(s, x){ return s + x.rows.length + 1; }, 0), acc = 0, cols = [[], []];
   gl.forEach(function(x){ (acc < totalRows / 2 ? cols[0] : cols[1]).push(x); acc += x.rows.length + 1; });
