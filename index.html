@@ -675,6 +675,16 @@ function careParse(n){
   var per = /181일이상/.test(s) ? "181" : /30일한도/.test(s) ? "30" : /180일한도/.test(s) ? "180" : "";
   return { kind: kind, who: who, hosp: hosp, per: per, add: /사용추가보장/.test(s), yo: /요양성특정질병/.test(s) };
 }
+// 간병 담보 설명: 통합간편2610 약관 제1조·제2조 기준(2026-11-07 확인). 지원일당은 아직 확인 전이라 비워 둔다
+function careTerm(n){
+  var p = careParse(n); if (!p || p.kind === "sup") return null;
+  var who = p.who === "inj" ? "다쳐서" : "병으로", long = p.per === "181";
+  if (p.kind === "use") {
+    if (p.hosp === "nh") return { when: who + " 요양병원에 입원해 간병인을 쓰면 간병인 쓴 날 하루 가입금액" + (long ? " (180일을 넘는 날부터)" : ""), note: "간호·간병통합서비스 병동에 있는 날은 안 나와요" + (p.per === "180" ? " · 1회 입원당 180일까지" : "") };
+    return { when: who + " 병원·의원(" + (long ? "요양·정신·한방병원" : "요양병원") + " 제외)에 " + (long ? "181일 이상 입원해 180일을 넘는 날부터 " : "입원해 ") + "간병인을 쓰면 하루 가입금액 — 간병인 비용이 하루 7만원 이상이거나 8시간 이상이면 100%, 그보다 적으면 50%", note: "간호·간병통합서비스 병동에 있는 날은 안 나와요" + (p.per === "180" ? " · 1회 입원당 180일까지" : "") };
+  }
+  return { when: who + " 간호·간병통합서비스 병동에 입원하면 " + (long ? "180일을 넘는 날부터 " : "") + "하루 가입금액" + (long ? " (요양·정신·한방병원 제외)" : ""), note: long ? "181일 이상 입원했을 때 · 1회 입원당 185일까지" : (p.per === "180" ? "1회 입원당 180일까지" : "") };
+}
 function careBox(){
   var cells = {}, any = false;
   M.all.forEach(function(it){
@@ -730,7 +740,7 @@ function won(m){ m = Math.round(+m || 0); if (m === 0) return "0원"; if (m < 0)
 function wonFull(w){ return (Math.round(+w || 0)).toLocaleString("ko-KR") + "원"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 function pct(v, t){ return (v / t * 100).toFixed(1) + "%"; }
-function payTag(n){ var p = PAY[n]; if (!p) return ""; var c = /최초/.test(p) ? "p1" : /매년/.test(p) ? "py" : /회당/.test(p) ? "pc" : "pd"; return '<span class="pt ' + c + '">' + p + '</span>'; }
+function payTag(n){ var p = PAY[n] || (careParse(n) ? "1일당" : ""); if (!p) return ""; var c = /최초/.test(p) ? "p1" : /매년/.test(p) ? "py" : /회당/.test(p) ? "pc" : "pd"; return '<span class="pt ' + c + '">' + p + '</span>'; }
 
 // ---------- 계산 ----------
 var M; // 계산 결과
@@ -954,7 +964,7 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = UT[it.n][(+it.now || 0) + (+it.add || 0)]; when = ut ? UW[it.n](ut) : '이 가입금액의 항목별 금액은 약관 지급표로 확인해 주세요.'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(g.name) + '</span>' + payTag(it.n) + '</div>'
@@ -1304,9 +1314,11 @@ function buildFromPdf(ana, prop, who){
   Object.keys(ANA_MAP).concat(Object.keys(ANA_NEW)).forEach(function(k){ covKeys[k] = 1; });
   ana.extra.forEach(function(x){ if (!covKeys[x.sig]) other[x.co] = (other[x.co] || 0) + x.amt; });
   var oi = Object.keys(other).map(function(k){ return { n: k, now: other[k], rec: 0, add: 0 }; });
-  var extraNew = [], s130 = {}, plus = { "상해": {}, "질병": {} }, matched = 0;
+  var extraNew = [], careNew = [], s130 = {}, plus = { "상해": {}, "질병": {} }, matched = 0;
   prop.riders.forEach(function(x){
     var nm = cleanRider(x.name), m;
+    // 간병인·간호간병 일당은 병실 입원일당(1인실·2-3인실)과 다른 담보라 따로 둔다 → 간병인 보장 표
+    if (careParse(nm)) { careNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: nm, unv: !TERMS[nm] && !careTerm(nm) }); return; }
     if ((m = nm.match(/^수술비Ⅱ\(1-5종\)\[(상해|질병)(\d)종\]/))) { var it5 = byN[m[1] + " " + m[2] + "종 수술비"]; it5.add = x.amt; matched++; return; }
     if ((m = nm.match(/^(상해|질병)1-5종수술비\(plus\).*\((\d)종/))) { plus[m[1]][m[2]] = x.amt; matched++; return; }
     if ((m = nm.match(/^130대질병수술비\[(.+?)\]/)) && C130_KEY[m[1]]) { s130[C130_KEY[m[1]]] = x.amt; matched++; return; }
@@ -1329,6 +1341,7 @@ function buildFromPdf(ana, prop, who){
     byN[nm].add = Math.max.apply(null, ks.map(function(j){ return p[j]; }));
     byN[nm].rider = k + " 1-5종 수술비(plus)(연간 2회 이상) " + ks.map(function(j){ return j + "종 " + won(p[j]); }).join("·");
   });
+  if (careNew.length) D.groups.push({ icon: "🧑‍⚕️", name: "간병인 보장", items: careNew });
   if (extraNew.length) D.groups.push({ icon: "➕", name: "그 밖의 제안 담보", items: extraNew });
   if (oi.length) D.groups.push({ icon: "📁", name: "그 밖의 현재 보장", items: oi });
   D.customer = who.name; D.age = who.age; D.sex = who.sex; D.date = who.date;
