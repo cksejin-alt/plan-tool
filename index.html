@@ -166,7 +166,7 @@
   .rcx{font-size:11.5px;color:#9A3412;margin-top:4px;line-height:1.4}
   .colwrap{column-count:2;column-gap:10px} .colwrap table.n{break-inside:avoid;margin-bottom:8px;font-size:11px} .colwrap table.n td{padding:4px 6px} .colwrap table.n th{padding:5px 6px;font-size:10.5px}
   .keep{display:flex;flex-wrap:wrap;gap:6px} .keep span{background:var(--bg);border-radius:999px;padding:4px 10px;font-size:11px} .keep b{font-weight:800}
-  .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:5px 12px 5px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:184px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1.5px 4px;white-space:nowrap}
+  .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:5px 12px 5px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:184px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1.5px 4px;white-space:nowrap} .rtb td.rb{color:var(--sub);font-size:10px}
   .rleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:-1px} .rl0{background:rgba(156,163,175,.45);border:1.5px dashed #6B7280} .rl1{background:var(--pink);border:2px solid var(--red)}
   .rnote{margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--sub)}
   .s2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
@@ -571,17 +571,19 @@ var SHARE = {
 };
 
 // 담보군 그래프: 담보를 4개 군의 축으로 묶는다. table은 보장분석 현황표에 합계가 있는 축 → '그 밖의 현재 보장'에서 다시 더하지 않는다.
+// b = 기준 금액(만원): 그래프 바깥 테두리. 사망·후유장해 2억은 캡틴 기준(2026-11-07), 나머지는 임시 기준
 var COV_PANELS = [
-  { t: "사망·후유장해", axes: [
-    { k: "dd", n: "질병 사망", s: "질병사망", table: 1 }, { k: "ad", n: "상해 사망", s: "상해사망", table: 1 }, { k: "dh", n: "질병 후유장해", s: "질병후유" }, { k: "ah", n: "상해 후유장해", s: "상해후유" } ]},
-  { t: "3대 진단 및 치료비", axes: [
-    { k: "c1", n: "일반암 진단", s: "일반암", table: 1 }, { k: "c2", n: "유사암 진단", s: "유사암", table: 1 }, { k: "ct", n: "암 치료비", s: "암 치료" }, { k: "b1", n: "뇌혈관 진단", s: "뇌혈관", table: 1 }, { k: "b2", n: "뇌졸중 진단", s: "뇌졸중", table: 1 },
-    { k: "b3", n: "뇌출혈 진단", s: "뇌출혈", opt: 1 }, { k: "h1", n: "허혈성심장 진단", s: "허혈성", table: 1 }, { k: "h2", n: "급성심근경색 진단", s: "심근경색", table: 1 }, { k: "bt", n: "뇌·심장 치료비", s: "뇌·심 치료" } ]},
+  { t: "사망·후유장해·치료비", axes: [
+    { k: "dd", n: "질병 사망", s: "질병사망", b: 20000, table: 1 }, { k: "ad", n: "상해 사망", s: "상해사망", b: 20000, table: 1 }, { k: "dh", n: "질병 후유장해", s: "질병후유", b: 20000 }, { k: "ah", n: "상해 후유장해", s: "상해후유", b: 20000 },
+    { k: "ct", n: "암 치료비", s: "암 치료", b: 10000 }, { k: "cj", n: "중입자 치료비", s: "중입자", b: 5000 }, { k: "bt", n: "뇌·심장 치료비", s: "뇌·심 치료", b: 10000 } ]},
+  { t: "3대 진단비", axes: [
+    { k: "c1", n: "일반암 진단", s: "일반암", b: 10000, table: 1 }, { k: "c2", n: "유사암 진단", s: "유사암", b: 2000, table: 1 }, { k: "b1", n: "뇌혈관 진단", s: "뇌혈관", b: 3000, table: 1 }, { k: "b2", n: "뇌졸중 진단", s: "뇌졸중", b: 2000, table: 1 },
+    { k: "b3", n: "뇌출혈 진단", s: "뇌출혈", b: 2000, opt: 1 }, { k: "h1", n: "허혈성심장 진단", s: "허혈성", b: 3000, table: 1 }, { k: "h2", n: "급성심근경색 진단", s: "심근경색", b: 2000, table: 1 } ]},
   { t: "실손의료비·수술·입원", axes: [
-    { k: "m1", n: "질병 입원(실손)", s: "질병입원", table: 1 }, { k: "m2", n: "질병 통원(실손)", s: "질병통원", table: 1 }, { k: "m3", n: "상해 입원(실손)", s: "상해입원", table: 1 }, { k: "m4", n: "상해 통원(실손)", s: "상해통원", table: 1 },
-    { k: "sd", n: "질병 수술비", s: "질병수술" }, { k: "sa", n: "상해 수술비", s: "상해수술" }, { k: "dy", n: "입원일당(하루)", s: "입원일당", max: 1 } ]},
+    { k: "m1", n: "질병 입원(실손)", s: "질병입원", b: 5000, table: 1 }, { k: "m2", n: "질병 통원(실손)", s: "질병통원", b: 30, table: 1 }, { k: "m3", n: "상해 입원(실손)", s: "상해입원", b: 5000, table: 1 }, { k: "m4", n: "상해 통원(실손)", s: "상해통원", b: 30, table: 1 },
+    { k: "sd", n: "질병 수술비", s: "질병수술", b: 1000 }, { k: "sa", n: "상해 수술비", s: "상해수술", b: 1000 }, { k: "dy", n: "입원일당(하루)", s: "입원일당", b: 10, max: 1 } ]},
   { t: "운전자·기타 비용", axes: [
-    { k: "t1", n: "교통사고 처리지원금", s: "처리지원" }, { k: "t2", n: "변호사 선임비용", s: "변호사" }, { k: "t3", n: "벌금", s: "벌금" }, { k: "t4", n: "자동차사고 부상치료비", s: "부상치료" }, { k: "l1", n: "일상생활 배상책임", s: "배상책임" }, { k: "o1", n: "치아 치료비", s: "치아" }, { k: "o2", n: "골절·화상", s: "골절·화상" }, { k: "o9", n: "그 밖의 담보", s: "기타", opt: 1 } ]}
+    { k: "t1", n: "교통사고 처리지원금", s: "처리지원", b: 20000 }, { k: "t2", n: "변호사 선임비용", s: "변호사", b: 5000 }, { k: "t3", n: "벌금", s: "벌금", b: 3000 }, { k: "t4", n: "자동차사고 부상치료비", s: "부상치료", b: 30 }, { k: "l1", n: "일상생활 배상책임", s: "배상책임", b: 10000 }, { k: "o1", n: "치아 치료비", s: "치아", b: 150 }, { k: "o2", n: "골절·화상", s: "골절·화상", b: 100 }, { k: "o9", n: "그 밖의 담보", s: "기타", b: 5000, opt: 1 } ]}
 ];
 function covAxis(n){
   var s = n.replace(/\s/g, "");
@@ -599,7 +601,8 @@ function covAxis(n){
     if (/골절|화상/.test(s)) return ["o2"];
     return ["o9"];
   }
-  if (/암|중입자/.test(s)) return ["ct"];
+  if (/중입자/.test(s)) return ["cj"];
+  if (/암/.test(s)) return ["ct"];
   if (/순환계|혈전|2대질환|뇌혈관|뇌졸중|뇌출혈|뇌경색|허혈|심근경색|심장/.test(s)) return ["bt"];
   if (/수술/.test(s)) return /상해|골절|재해/.test(s) ? ["sa"] : ["sd"];
   if (/일당|입원/.test(s)) return ["dy"];
@@ -631,12 +634,12 @@ function covAxesData(){
 }
 function covRadar(p, by){
   var ax = p.axes.map(function(a){ return by[a.k]; }).filter(function(x){ return !x.a.opt || x.aft > 0; }), n = ax.length, W = 280, H = 184, cx = W / 2, cy = H / 2, R = 62;
-  var top = Math.max.apply(null, ax.map(function(x){ return x.aft; })) || 1;
   var pt = function(i, r){ var t = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(t), cy + r * Math.sin(t)]; };
-  var at = function(i, v){ return pt(i, R * Math.sqrt(v / top)); }; // 일당과 억 단위가 같은 표에 있어 제곱근 눈금을 쓴다
+  var at = function(i, v){ return pt(i, R * Math.min(1, v / ax[i].a.b)); }; // 바깥 테두리 = 기준 금액, 넘으면 테두리에 멈춘다
   var poly = function(f){ return ax.map(function(x, i){ return f(x, i).map(function(c){ return c.toFixed(1); }).join(","); }).join(" "); };
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(p.t) + ' 담보군 그래프">';
-  [0.25, 0.5, 0.75, 1].forEach(function(q){ s += '<polygon points="' + poly(function(x, i){ return pt(i, R * q); }) + '" fill="none" stroke="#E2E4E8" stroke-width="1"/>'; });
+  [0.25, 0.5, 0.75].forEach(function(q){ s += '<polygon points="' + poly(function(x, i){ return pt(i, R * q); }) + '" fill="none" stroke="#E2E4E8" stroke-width="1"/>'; });
+  s += '<polygon points="' + poly(function(x, i){ return pt(i, R); }) + '" fill="none" stroke="#9CA3AF" stroke-width="1.2"/>';
   ax.forEach(function(x, i){ var e = pt(i, R); s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0].toFixed(1) + '" y2="' + e[1].toFixed(1) + '" stroke="#E2E4E8" stroke-width="1"/>'; });
   s += '<polygon points="' + poly(function(x, i){ return at(i, x.aft); }) + '" fill="#FBEAEC" fill-opacity=".85" stroke="#B11226" stroke-width="2" stroke-linejoin="round"/>';
   s += '<polygon points="' + poly(function(x, i){ return at(i, x.now); }) + '" fill="#9CA3AF" fill-opacity=".35" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round"/>';
@@ -647,14 +650,14 @@ function covRadar(p, by){
   });
   var rows = ax.map(function(x){
     var tip = x.items.length ? x.items.map(function(it){ return it.n + " " + won((+it.now || 0) + (+it.add || 0)); }).join(", ") : "가입 없음";
-    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + '</td><td>' + (x.now ? won(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td></tr>';
+    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + '</td><td>' + (x.now ? curW(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td><td class="rb">' + won(x.a.b) + '</td></tr>';
   }).join('');
-  return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th></tr>' + rows + '</table></div></div>';
+  return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th><th>기준</th></tr>' + rows + '</table></div></div>';
 }
 function covCharts(){
   var by = covAxesData();
   return '<div class="st"><h2>🛡️ 담보군별 보장 한눈에</h2><small class="rleg"><i class="rl0"></i>현재 <i class="rl1"></i>가입 후</small></div><div class="rgrid">' + COV_PANELS.map(function(p){ return covRadar(p, by); }).join('') + '</div>'
-    + '<div class="rnote">그래프는 바깥쪽일수록 금액이 커요. 칸마다 눈금이 달라 금액은 표로 비교해 주세요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>';
+    + '<div class="rnote">그래프 바깥 테두리가 표의 \'기준\' 금액이에요. 기준을 채우면 테두리에 닿고, 넘어도 테두리에서 멈춰요. 담보 가입금액을 더한 값이라 한 번에 받는 금액이 아니에요. 1~5종 수술비와 입원일당은 가장 큰 금액만 셌어요. 실손·배상책임은 여러 개 가입해도 실제 손해 안에서 나눠서 나와요.</div>';
 }
 // 제안 담보 표: 회사 담보 묶음 대신 진단비·치료비·상해 수술비·질병 수술비처럼 같은 종류끼리 모은다
 var PROP_GROUPS = [
