@@ -148,7 +148,7 @@
   .jbt{font-size:22px;font-weight:900;margin-top:6px;letter-spacing:-.5px}
   .jbn{text-align:right} .jbn span{display:block;font-size:14px;color:var(--sub)} .jbn b{font-size:36px;font-weight:900;color:var(--red);letter-spacing:-1px} .jbn i{font-style:normal;display:inline-block;margin-left:8px;font-size:14px;font-weight:800;color:#fff;background:var(--red);padding:4px 10px;border-radius:999px;vertical-align:8px}
   .jhp3{font-size:14px;color:#4C1D95;background:var(--purbg);border:1px solid #DDD6FE;border-radius:10px;padding:7px 12px;margin:10px 0}
-  .csg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .csg{column-count:2;column-gap:8px} .csg .cs{break-inside:avoid;margin-bottom:8px}
   .cs{background:var(--bg);border-radius:12px;padding:9px 11px} .cs .ct{font-size:14px;font-weight:800;display:flex;justify-content:space-between;gap:6px;margin-bottom:4px} .cs .ct b{white-space:nowrap}
   .cs ul{margin:0;padding:0} .cs li{list-style:none;display:flex;justify-content:space-between;gap:6px;font-size:11.5px;line-height:1.3;padding:3px 0 3px 7px;border-left:3px solid var(--red);margin-bottom:3px} .cs li b{white-space:nowrap}
   .cs li.ex{border-color:var(--gray)} .cs li.hp{border-color:var(--pur);background:var(--purbg)}
@@ -995,7 +995,7 @@ function fillGaps(){
   function run(els, pool, room, before){
     var idx = 0;
     els.forEach(function(el){
-      var used = function(){ var h = 0; [].forEach.call(el.children, function(c){ var pos = getComputedStyle(c).position; if (pos !== 'absolute') h += c.offsetHeight + parseFloat(getComputedStyle(c).marginTop) + parseFloat(getComputedStyle(c).marginBottom); }); return h; };
+      var used = function(){ return contentH0(el); };
       var tries = 0;
       while (idx < pool.length && tries < pool.length) {
         var tmp = document.createElement('div'); tmp.innerHTML = pool[idx]; var node = tmp.firstChild;
@@ -1006,7 +1006,7 @@ function fillGaps(){
     });
   }
   var roomS = function(){ return 1123 - 34 - 26 - 34; }, roomP = function(){ return 1273 - 64 - 70; };
-  function contentH0(el){ var h = 0; [].forEach.call(el.children, function(c){ if (getComputedStyle(c).position !== 'absolute') h += c.offsetHeight + parseFloat(getComputedStyle(c).marginTop) + parseFloat(getComputedStyle(c).marginBottom); }); return h; }
+  function contentH0(el){ var k = el.getBoundingClientRect().height / el.offsetHeight || 1, h = 0; [].forEach.call(el.children, function(c){ if (getComputedStyle(c).position !== 'absolute') h += c.getBoundingClientRect().height / k + parseFloat(getComputedStyle(c).marginTop) + parseFloat(getComputedStyle(c).marginBottom); }); return h; }
   // 요약형: 담보 목록이 넘치면 다음 쪽을 만들어 뒤쪽 분야부터 넘긴다
   for (var pg = document.querySelector('#vSum .page'), np; pg; pg = pg.nextElementSibling) (function(pg){
     var cw = pg.querySelector('.colwrap'); if (!cw || contentH0(pg) <= roomS()) return;
@@ -1042,6 +1042,29 @@ function fillGaps(){
     all2.forEach(function(el, i){ var pgEl = el.querySelector('.pg'); if (!pgEl) { el.insertAdjacentHTML('beforeend', '<div class="pg"></div>'); pgEl = el.querySelector('.pg'); } pgEl.textContent = (i + 1) + ' / ' + all2.length; });
     slides = all2;
   })();
+  // PT: 카드는 뒤 장으로 나눠 옮겨 장마다 높이를 비슷하게 맞춘다
+  (function balanceCards(){
+    var cps = [].slice.call(document.querySelectorAll('#stage .slide.cardpage'));
+    for (var i = cps.length - 1; i > 0; i--) {
+      var a = cps[i - 1].querySelector('.rcs'), b = cps[i].querySelector('.rcs'), g = 0;
+      while (g++ < 30 && a.children.length > 2 && contentH0(cps[i]) < contentH0(cps[i - 1]) - 160) {
+        b.insertBefore(a.lastElementChild, b.firstChild);
+        if (contentH0(cps[i]) > roomP()) { a.appendChild(b.firstElementChild); break; }
+      }
+    }
+    // 카드 수가 홀수면 마지막 카드를 두 칸 폭으로 펴서 오른쪽 빈칸을 없앤다
+    cps.forEach(function(el){ var r = el.querySelector('.rcs'); if (r.children.length % 2) { r.lastElementChild.style.gridColumn = '1 / -1'; if (contentH0(el) > roomP()) r.lastElementChild.style.gridColumn = ''; } });
+  })();
+  // PT: 장마다 남는 높이만큼 내용을 키워 아래 공란을 없앤다 (최대 1.3배, 폭은 그대로)
+  slides.forEach(function(el){
+    var kids = [].filter.call(el.children, function(c){ return getComputedStyle(c).position !== 'absolute' && !c.classList.contains('cvb'); });
+    if (!kids.length) return;
+    var w = document.createElement('div'); w.className = 'fitw'; el.insertBefore(w, kids[0]); kids.forEach(function(c){ w.appendChild(c); });
+    if (contentH0(el) >= roomP() - 4) return;
+    var lo = 1, hi = 1.3;
+    for (var n = 0; n < 8; n++) { var s = (lo + hi) / 2; w.style.zoom = s; w.style.width = (780 / s) + 'px'; if (contentH0(el) <= roomP()) lo = s; else hi = s; }
+    w.style.zoom = lo; w.style.width = (780 / lo) + 'px';
+  });
   var ptPool = fillers(true); ptPool = ptPool.slice(1, ptPool.length - 1); ptPool.splice(1, 1); // 마무리 장에 쓴 0·2·끝 번 제외
   run(slides.slice(0, -1), ptPool, roomP, null);
   // 그래도 남는 작은 틈은 한 줄 안내로 채운다 (늘리기·벌리기는 하지 않음)
