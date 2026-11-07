@@ -169,7 +169,7 @@
   .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:3px 12px 3px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:150px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1px 4px;white-space:nowrap} .rtb td.rb{color:var(--sub);font-size:10px}
   .rleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:-1px} .rl0{background:rgba(156,163,175,.45);border:1.5px dashed #6B7280} .rl1{background:var(--pink);border:2px solid var(--red)}
   .rnote{margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--sub)}
-  .care{width:100%;border-collapse:collapse;font-size:11px} .care th{background:var(--bg);font-weight:800;padding:5px 6px;border:1px solid var(--line);text-align:center} .care th small{display:block;font-weight:500;color:var(--sub);font-size:9.5px} .care td{border:1px solid var(--line);padding:4px 6px;vertical-align:top} .care td div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:2px 0} .care td b{color:var(--red)} .care td small{color:var(--sub);font-size:9.5px} .care td.cn{text-align:center;color:var(--sub)} .care .cp{font-size:9.5px;font-weight:700;background:#EEF2FF;color:#3730A3;border-radius:5px;padding:0 5px} .care .cp.l{background:#FEF3C7;color:#92400E}
+  .care{width:100%;border-collapse:collapse;font-size:11px} .care th{background:var(--bg);font-weight:800;padding:5px 6px;border:1px solid var(--line);text-align:center} .care th small{display:block;font-weight:500;color:var(--sub);font-size:9.5px} .care td{border:1px solid var(--line);padding:4px 6px;vertical-align:top} .care td div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:2px 0} .care td b{color:var(--red)} .care td small{color:var(--sub);font-size:9.5px} .care td.cn{text-align:center;color:var(--sub)} .care td .cx{color:#9CA3AF;font-size:10.5px} .care td .cx .cp{opacity:.55} .care .cp{font-size:9.5px;font-weight:700;background:#EEF2FF;color:#3730A3;border-radius:5px;padding:0 5px} .care .cp.l{background:#FEF3C7;color:#92400E}
   .care0{border:1px dashed var(--pink2);border-radius:10px;padding:8px 12px;font-size:11.5px;color:var(--red);background:#FFFBFB}
   .s2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
   .s2col table.n{font-size:11px} .s2col table.n td{padding:4px 6px} .s2col table.n th{padding:5px 6px;font-size:10.5px}
@@ -683,10 +683,11 @@ function careBox(){
     (cells[key] = cells[key] || []).push({ v: v, now: +it.now || 0, p: p }); any = true;
   });
   var perTxt = { "30": "1~30일", "180": "1~180일", "181": "181일~", "": "기간 확인" };
+  // 칸마다 1~180일(1~30일 포함)과 181일~ 두 줄을 늘 보여 주고, 없는 기간은 '없음'으로 표시한다
   var cell = function(who, col){
-    var xs = cells[who + "|" + col]; if (!xs) return '<td class="cn">-</td>';
-    xs.sort(function(a, b){ return (a.p.per === "181") - (b.p.per === "181"); });
-    return '<td>' + xs.map(function(x){ return '<div><span class="cp' + (x.p.per === "181" ? ' l' : '') + '">' + perTxt[x.p.per] + '</span><b>' + won(x.v) + '</b>' + (x.p.add ? '<small>간호간병 병동 추가</small>' : '') + (x.p.yo ? '<small>요양성 특정질병</small>' : '') + (x.now ? '<small>현재 ' + curW(x.now) + '</small>' : '') + '</div>'; }).join('') + '</td>';
+    var xs = cells[who + "|" + col] || [], line = function(x){ return '<div><span class="cp' + (x.p.per === "181" ? ' l' : '') + '">' + perTxt[x.p.per] + '</span><b>' + won(x.v) + '</b>' + (x.p.add ? '<small>간호간병 병동 추가</small>' : '') + (x.p.yo ? '<small>요양성 특정질병</small>' : '') + (x.now ? '<small>현재 ' + curW(x.now) + '</small>' : '') + '</div>'; };
+    var sh = xs.filter(function(x){ return x.p.per !== "181"; }), lg = xs.filter(function(x){ return x.p.per === "181"; });
+    return '<td>' + (sh.length ? sh.map(line).join('') : '<div class="cx"><span class="cp">1~180일</span>없음</div>') + (lg.length ? lg.map(line).join('') : '<div class="cx"><span class="cp l">181일~</span>없음</div>') + '</td>';
   };
   var h = '<div class="st"><h2>🧑‍⚕️ 간병인 보장</h2><small>하루 금액 · 가입 후</small></div>';
   if (!any) return h + '<div class="care0">간병인 보장(사용일당·지원일당)이 없어요. 입원해서 간병인을 쓰면 그 비용은 본인이 내야 해요.</div>';
