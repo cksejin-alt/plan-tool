@@ -183,6 +183,7 @@
   .sgk{display:inline-block;font-size:9px;font-weight:800;color:#fff;background:var(--red);border-radius:4px;padding:1px 5px;margin-bottom:2px} .inj .sgk{background:#2563EB}
   .sgp2{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:10px} .sgp2 span{background:var(--bg);border-radius:6px;padding:2px 6px;white-space:nowrap} .sgp2 span.hp{background:var(--purbg);color:#5B21B6} .sgp2 i{font-style:normal;color:var(--sub);font-weight:800}
   .sgt{text-align:right} .sgt small{display:block;font-size:9.5px;color:var(--sub)} .sgt b{font-size:20px;font-weight:900;color:var(--red);letter-spacing:-.5px}
+  .lw{margin-top:6px;padding:6px 8px;border:1px solid #F5C2C7;background:#FFF5F5;border-radius:6px;font-size:10.5px;line-height:1.45;color:#7A1020} .lwx{color:#B11226;font-weight:600}
   .sgp2 span.sgno{background:none;border:0;color:var(--sub);font-weight:600;padding-left:0} .sgt b.sgnob{color:var(--sub)}
   .sgp .sgr{grid-template-columns:230px 1fr 150px;padding:12px 16px;border-radius:14px} .sgp .sgl b{font-size:18px} .sgp .sgl small{font-size:13px}
   .sgp .sgk{font-size:12px;padding:2px 8px} .sgp .sgp2{font-size:13.5px;gap:5px} .sgp .sgp2 span{padding:4px 8px} .sgp .sgt small{font-size:13px} .sgp .sgt b{font-size:32px}
@@ -664,9 +665,17 @@ function covRadar(p, by){
   });
   var rows = ax.map(function(x){
     var tip = x.items.length ? x.items.map(function(it){ return it.n + " " + won((+it.now || 0) + (+it.add || 0)); }).join(", ") : "가입 없음";
-    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + '</td><td>' + (x.now ? curW(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td><td class="rb">' + won(x.a.b) + '</td></tr>';
+    var lw = x.a.k === "t2" && lawyerOld().length;
+    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + (lw ? ' <span class="lwm">⚠️</span>' : '') + '</td><td>' + (x.now ? curW(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td><td class="rb">' + won(x.a.b) + '</td></tr>';
   }).join('');
-  return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th><th>기준</th></tr>' + rows + '</table></div></div>';
+  var lw = ax.some(function(x){ return x.a.k === "t2"; }) && lawyerOld().length;
+  return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th><th>기준</th></tr>' + rows + '</table>' + (lw ? '<div class="lw">' + lawyerWarn() + '</div>' : '') + '</div></div>';
+}
+// 2023년 이전 가입 변호사 선임비용 경고 (보장분석의 계약 시작일 기준)
+function lawyerOld(){ return (M.d && M.d.lawyerOld) || []; }
+function lawyerWarn(){
+  var xs = lawyerOld();
+  return '⚠️ <b>2023년 이전에 가입한 변호사 선임비용</b>(' + xs.map(function(x){ return esc(x.co) + ' ' + esc(x.start) + ' 가입'; }).join(', ') + ')은 보통 <b>구속되거나 기소(재판)된 경우</b>에만 나와요. 경찰 조사 단계부터 보장하는 변호사 선임비용은 2023년 이후 가입한 운전자보험부터예요. 정확한 조건은 그 보험의 약관을 확인해 주세요.';
 }
 function covCharts(){
   var by = covAxesData();
@@ -778,9 +787,9 @@ function conTables(maxRows){
   return out;
 }
 function conTable(x, pt){
-  var c = x.c;
-  return '<table class="n con' + (pt ? ' conp' : '') + '"><colgroup><col style="width:34%"><col style="width:15%"><col></colgroup><tr class="grp"><td colspan="3"><b>' + esc(c.co) + '</b> · ' + esc(c.prod) + (x.cont ? ' (이어서)' : '') + '<span>월 ' + wonFull(c.prem) + '</span></td></tr>'
-    + x.rows.map(function(r){ return '<tr><td>' + esc(r.n) + (r.kind === "실손" ? ' <small>실손</small>' : '') + '</td><td class="ca">' + won(r.amt) + '</td><td class="cx">' + esc(conExplain(r.n, r.sig, r.kind)) + '</td></tr>'; }).join('') + '</table>';
+  var c = x.c, old = c.start && c.start < "2023";
+  return '<table class="n con' + (pt ? ' conp' : '') + '"><colgroup><col style="width:34%"><col style="width:15%"><col></colgroup><tr class="grp"><td colspan="3"><b>' + esc(c.co) + '</b> · ' + esc(c.prod) + (x.cont ? ' (이어서)' : '') + '<span>' + (c.start ? esc(c.start) + ' 가입 · ' : '') + '월 ' + wonFull(c.prem) + '</span></td></tr>'
+    + x.rows.map(function(r){ var lw = old && /변호사/.test(r.n + r.sig); return '<tr><td>' + esc(r.n) + (r.kind === "실손" ? ' <small>실손</small>' : '') + '</td><td class="ca">' + won(r.amt) + '</td><td class="cx">' + (lw ? '<span class="lwx">⚠️ 2023년 이전 가입이라 보통 구속·기소(재판)된 경우만 나와요. 경찰 조사 단계는 보장 안 될 수 있어요 (약관 확인)</span>' : esc(conExplain(r.n, r.sig, r.kind))) + '</td></tr>'; }).join('') + '</table>';
 }
 function conSection(){
   var list = M.d.conList || [];
@@ -1387,7 +1396,7 @@ function cellsOf(t){ return t.split("|").map(function(c){ return c.replace(/\s/g
 
 // 보장분석: 현황표(담보·보장·권장)와 별첨 계약표(회사담보명·신정원담보명·가입금액). 계약자 줄은 읽지 않는다.
 function parseAnalysis(pages){
-  var r = { cov: {}, order: [], extra: [], list: [], skip: {}, premium: 0, contracts: 0, odd: 0 }, pend = null, glued = [];
+  var r = { cov: {}, order: [], extra: [], list: [], skip: {}, premium: 0, contracts: 0, odd: 0 }, pend = null, glued = [], recent = [];
   pages.forEach(function(lines){
     lines.forEach(function(l){
       var t = l.t.replace(/[\s|]/g, ""), m, re, got = [];
@@ -1411,13 +1420,12 @@ function parseAnalysis(pages){
         else glued.push({ raw: c[2], amt: a, kind: c[1], ci: r.list.length - 1, at: r.extra.length }); // 회사담보명이 길어 신정원담보명과 한 칸으로 붙은 줄
         return;
       }
-      // 별첨 상품별 가입현황: 쪽마다 회사명 → 상품명 → (계약자 줄은 건너뜀) → 보험기간·월 보험료
-      if (/^별첨상품별보험가입현황/.test(t)) { r.list.push({ co: "", prod: "", prem: 0 }); return; }
+      // 별첨 상품별 가입현황: 회사명 → 상품명 → 계약자 줄(이름은 읽지 않음) → 보험기간·월 보험료.
+      // 계약 하나가 여러 쪽으로 이어지거나 한 쪽에 계약이 둘 있어도, '계약자' 줄 바로 앞 두 줄로 새 계약을 시작한다.
+      if (/^계약자\/?피보험자/.test(t)) { if (recent.length >= 2) r.list.push({ co: recent[recent.length - 2], prod: recent[recent.length - 1], prem: 0 }); recent = []; return; }
       var k = r.list[r.list.length - 1];
-      if (k && !k.prem) {
-        if ((m = t.match(/월보험료([\d,]+)원/))) k.prem = +m[1].replace(/,/g, "");
-        else if (!/계약자|피보험자|보험기간|NO구분|가입담보명/.test(t)) { if (!k.co) k.co = l.t.trim(); else if (!k.prod) k.prod = l.t.trim(); }
-      }
+      if (k && !k.prem && (m = t.match(/^보험기간(\d{4})\.(\d{2})\.(\d{2})~.*월보험료([\d,]+)원/))) { k.prem = +m[4].replace(/,/g, ""); k.start = m[1] + "." + m[2] + "." + m[3]; return; }
+      recent.push(l.t.trim()); if (recent.length > 2) recent.shift();
     });
   });
   // 붙은 줄: 끝에 붙은 신정원담보명(다른 줄에 나온 이름·현황표 이름·'기타' 중 가장 긴 것)을 떼어 낸다
@@ -1513,7 +1521,9 @@ function buildFromPdf(ana, prop, who){
   D.agent = who.agent || prop.agent || ana.agent || ""; D.branch = who.branch || (prop.branch || ana.branch ? "메리츠화재 " + (prop.branch || ana.branch) : "");
   var gone = (ana.list || []).filter(function(x, i){ return skip[i]; });
   D.skipped = gone.map(function(x){ return x.co + " " + x.prod; });
-  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
+  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, start: x.start || "", rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
+  // 2023년 이전에 가입한 변호사 선임비용: 대부분 구속·기소된 경우만 보장(경찰 조사 단계는 2022년 말~2023년 상품부터)
+  D.lawyerOld = D.conList.filter(function(c){ return c.start && c.start < "2023" && c.rows.some(function(r){ return /변호사/.test(r.n + r.sig); }); }).map(function(c){ return { co: c.co, start: c.start }; });
   D.contracts = ana.contracts - gone.length; D.premiumAdd = prop.total;
   D.premiumNow = Math.max(0, ana.premium - gone.reduce(function(s, x){ return s + x.prem; }, 0));
   var sum = prop.riders.reduce(function(s, x){ return s + x.prem; }, 0);
