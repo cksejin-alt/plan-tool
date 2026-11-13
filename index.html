@@ -175,7 +175,7 @@
   .s2col table.n{font-size:11px} .s2col table.n td{padding:4px 6px} .s2col table.n th{padding:5px 6px;font-size:10.5px}
   /* 빈 곳은 늘리기·벌리기 대신 정보로 채운다 (캡틴: 카드 안 공란 싫음) */
   /* 남는 높이는 간격이 아니라 내용 상자가 커져서 채운다 (위쪽 공란 방지) */
-  .sg{display:flex;flex-direction:column;gap:5px}
+  .sg{display:flex;flex-direction:column;gap:4px} .page .sgr{padding:4px 10px} .page .sgt b{font-size:18px}
   .sgr{display:grid;grid-template-columns:190px 1fr 110px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff}
   .sgr.inj{background:#F8FAFF}
   .sgl b{display:block;font-size:12px} .sgl small{font-size:9.5px;color:var(--sub)}
@@ -517,8 +517,13 @@ var SURG_EX = [
   { k: "질병", t: "다빈도 질병 수술", ex: "양성종양·갑상선질환·축농증 등", jong: 3, c130: "다빈도61대" },
   { k: "질병", t: "편도염 수술", ex: "자주 하는 수술", jong: 2, c130: "편도염" },
   { k: "질병", t: "백내장 수술", ex: "나이 들면 흔한 수술", jong: 1, c130: "백내장" },
-  { k: "상해", t: "다쳐서 큰 수술", ex: "큰 사고·골절 수술 등", jong: 5 },
-  { k: "상해", t: "다쳐서 수술", ex: "골절·인대 수술 등", jong: 3 }
+  // 상해: 약관 별표38(1-5종 수술분류표Ⅱ) — 사지골·사지관절 관혈수술 2종, 근·건·인대·연골 관혈수술 1종, 척추·골반 관혈수술 3종
+  // frac: 골절 진단비가 함께 나오는 예시, nf: 신골절치료비 지급률(별표39, 수술한 골절/그 외)
+  { k: "상해", t: "손목 골절 수술", ex: "넘어지며 손을 짚다 부러짐", jong: 2, frac: 1, nf: 18 },
+  { k: "상해", t: "발목·다리 골절 수술", ex: "계단·운동하다 부러짐", jong: 2, frac: 1, nf: 24 },
+  { k: "상해", t: "척추·골반 골절 수술", ex: "낙상·교통사고", jong: 3, frac: 1, nf: 40 },
+  { k: "상해", t: "십자인대·아킬레스건 수술", ex: "운동하다 끊어짐", jong: 1 },
+  { k: "상해", t: "골절 · 수술 없이 깁스", ex: "손목에 금이 감", jong: 0, frac: 1, nf: 6 }
 ];
 
 // 공개 통계 (원문 확인). 나이·성별에 맞춰 '왜 필요할까요?' 카드에 나옴
@@ -802,10 +807,15 @@ function surgRows(){
   var tv = function(n){ var it = M.byName[n]; return it ? (+it.now || 0) + (+it.add || 0) : 0; };
   var tn = function(n){ var it = M.byName[n]; return it ? (+it.now || 0) : 0; };
   var has130 = tv("130대 질병수술비 (11가지)") > 0;
+  // 골절 진단비(1사고당 정액)와 신골절치료비(가입금액 × 부위별 지급률)는 담보 이름으로 찾는다
+  var fracDx = function(f){ return M.all.filter(function(it){ return /골절/.test(it.n) && /진단/.test(it.n) && !/신골절/.test(it.n); }).reduce(function(s, it){ return s + f(it.n); }, 0); };
+  var newFrac = function(f){ return M.all.filter(function(it){ return /신골절/.test(it.n); }).reduce(function(s, it){ return s + f(it.n); }, 0); };
   return SURG_EX.map(function(e){
     var parts = e.k === "질병"
       ? [[e.jong + "종 수술비", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130대(" + e.c130 + ")", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["질병수술비", tv("질병 수술비"), tn("질병 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
-      : [[e.jong + "종 수술비", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["상해수술비", tv("상해 수술비"), tn("상해 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]];
+      : (e.jong ? [[e.jong + "종 수술비", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["상해수술비", tv("상해 수술비"), tn("상해 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]] : [])
+        .concat(e.frac ? [["골절 진단비", fracDx(tv), fracDx(tn)]] : [])
+        .concat(e.nf ? [["신골절치료비 " + e.nf + "%", newFrac(tv) * e.nf / 100, newFrac(tn) * e.nf / 100]] : []);
     parts = parts.filter(function(x){ return x[1] > 0; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
@@ -821,16 +831,16 @@ function surgNeed(pt){
     + '<div class="snm">내 부담이 커질수록 <b>수술할 때 정해진 금액을 받는 수술비 담보</b>가 그 빈자리를 채워 줘요</div>'
     + '<div class="sns">자기부담률은 가입한 실손 세대마다 달라요. 5세대도 중증 비급여는 30% 유지, 급여 입원은 20%(4세대와 같음). 계산은 실손 한도 안의 단순 예시. 출처: 금융위원회 보도자료(2021.6.29. 4세대 출시, 2026.5.6. 5세대 출시)</div></div>';
 }
-function surgTable(pt){
-  var rows = surgRows(), mx = Math.max.apply(null, rows.map(function(r){ return r.tot; }));
+function surgTable(pt, only){
+  var rows = surgRows().filter(function(r){ return !only || r.e.k === only; }), mx = Math.max.apply(null, rows.map(function(r){ return r.tot; }));
   var h = pt ? '' : '<div class="st"><h2>🔪 수술 한 번 받으면 이만큼</h2><small>수술 1회당 · 상급종합병원 · 가입 1년 이후</small></div>';
-  h += surgNeed(pt) + '<div class="sg' + (pt ? ' sgp' : '') + '">';
+  h += (only === "상해" ? '' : surgNeed(pt)) + '<div class="sg' + (pt ? ' sgp' : '') + '">';
   rows.forEach(function(r){
-    h += '<div class="sgr ' + (r.e.k === "상해" ? 'inj' : '') + '"><div class="sgl"><span class="sgk">' + r.e.k + '</span><b>' + esc(r.e.t) + '</b><small>' + esc(r.e.ex) + ' · ' + r.e.jong + '종이라면</small></div>'
+    h += '<div class="sgr ' + (r.e.k === "상해" ? 'inj' : '') + '"><div class="sgl"><span class="sgk">' + r.e.k + '</span><b>' + esc(r.e.t) + '</b><small>' + esc(r.e.ex) + ' · ' + (r.e.jong ? r.e.jong + '종이라면' : '수술 없음') + '</small></div>'
        + '<div class="sgp2">' + r.parts.map(function(x){ return '<span class="' + (x[3] ? 'hp' : '') + '">' + x[0] + ' ' + won(x[1]) + '</span>'; }).join('<i>+</i>') + '</div>'
        + '<div class="sgt"><small>현재 ' + curW(r.now) + '</small><b>' + won(r.tot) + '</b></div></div>';
   });
-  return h + '</div>' + (pt ? '' : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시).</div>');
+  return h + '</div>' + (pt ? '' : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시). 골절 진단비·신골절치료비는 1사고당이고, 신골절치료비는 부러진 곳과 수술 여부에 따라 가입금액의 일정 %가 나와요.</div>');
 }
 
 // ---------- ① 요약형 ----------
@@ -992,7 +1002,8 @@ function renderPt(){
       + src('가입금액은 설계서 기준 · 🏥 = 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 · 실제 지급은 약관 기준') + '</div>');
   }
 
-  P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비를 모두 더한 금액</p>' + surgTable(true) + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
+  P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비를 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
+  P.push('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
   // 5. 치료 예시 2개씩, 마지막 장에 확인사항
   var js = M.js;
   for (var i = 0; i < js.length; i += 2) {
@@ -1096,7 +1107,12 @@ function fillGaps(){
     var ncw = np.querySelector('.colwrap'), nf = np.querySelector('.pf'), n;
     while ((n = cw.nextElementSibling) && !n.classList.contains('pf')) np.insertBefore(n, nf);
     while (contentH0(pg) > roomS() && cw.children.length > 1) ncw.insertBefore(cw.lastElementChild, ncw.firstChild);
-    if (cw.children.length === 1) cw.style.columnCount = 1; // 표가 하나만 남으면 오른쪽 칸이 비지 않게 전체 폭으로
+    if (contentH0(pg) > roomS() && cw.children.length === 1) { // 표 하나도 못 들어가면 제목과 함께 통째로 다음 쪽으로
+      ncw.insertBefore(cw.lastElementChild, ncw.firstChild);
+      var hd = cw.previousElementSibling; if (hd && hd.classList.contains('st')) { ncw.previousElementSibling.querySelector('h2').innerHTML = hd.querySelector('h2').innerHTML; hd.remove(); }
+      cw.remove(); cw = null;
+    }
+    if (cw && cw.children.length === 1) cw.style.columnCount = 1; // 표가 하나만 남으면 오른쪽 칸이 비지 않게 전체 폭으로
     if (!ncw.children.length) { ncw.previousElementSibling.remove(); ncw.remove(); } // 표는 다 들어가고 아래 안내만 넘어온 쪽
   })(pg);
   var pages = [].slice.call(document.querySelectorAll('#vSum .page'));
