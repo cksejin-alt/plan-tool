@@ -164,6 +164,7 @@
   .rca{font-size:26px;font-weight:900;color:var(--red);letter-spacing:-.5px} .rca small{font-size:12px;color:var(--sub);font-weight:600}
   .rcw{font-size:13px;color:#374151;line-height:1.45;margin-top:4px} .rcw.muted{color:var(--sub);font-size:12px}
   .rcx{font-size:11.5px;color:#9A3412;margin-top:4px;line-height:1.4}
+  .colwrap.one{column-count:1} .con td.ca{white-space:nowrap;text-align:right;font-weight:700;width:80px} .con td.cx{color:#4B5563;font-size:10.5px} .con td small{color:var(--sub);font-size:9px} .con tr.grp td span{float:right;color:var(--sub);font-weight:600} .conp{width:100%;font-size:15px;margin-top:14px} .conp td{padding:7px 10px} .conp td.ca{width:120px} .conp td.cx{font-size:14px;text-align:left} .con{table-layout:fixed;width:100%} table.n.con td{white-space:normal;word-break:keep-all;overflow-wrap:anywhere} table.n.con td.ca{white-space:nowrap} table.n.con td:first-child,table.n.con td.cx{text-align:left}
   .colwrap{column-count:2;column-gap:10px} .colwrap table.n{break-inside:avoid;margin-bottom:8px;font-size:11px} .colwrap table.n td{padding:4px 6px} .colwrap table.n th{padding:5px 6px;font-size:10.5px}
   .keep{display:flex;flex-wrap:wrap;gap:6px} .keep span{background:var(--bg);border-radius:999px;padding:4px 10px;font-size:11px} .keep b{font-weight:800}
   .rgrid{display:grid;gap:7px} .rcard{display:grid;grid-template-columns:280px 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:3px 12px 3px 4px;break-inside:avoid} .rcard h3{margin:0 0 3px;font-size:13px;font-weight:800} .rcard svg{display:block;width:280px;height:150px} .rtb{width:100%;border-collapse:collapse;font-size:10.5px} .rtb th{text-align:right;color:var(--sub);font-weight:700;padding:1px 4px;border-bottom:1px solid var(--line)} .rtb th:first-child,.rtb td:first-child{text-align:left} .rtb td{text-align:right;padding:1px 4px;white-space:nowrap} .rtb td.rb{color:var(--sub);font-size:10px}
@@ -723,6 +724,78 @@ function careBox(){
   [["dis", "질병"], ["inj", "상해"]].forEach(function(w){ h += '<tr><th>' + w[1] + '</th>' + cell(w[0], "useGen") + cell(w[0], "useNh") + cell(w[0], "sup") + cell(w[0], "nis") + '</tr>'; });
   return h + '</table><div class="rnote">1~180일 = 한 번 입원에 180일까지, 181일~ = 181일째부터 이어서 보장. 지원일당 181일 이상은 요양·정신·한방병원 입원은 빠져요. 실제 지급 조건은 약관을 따라요.</div>';
 }
+// 지금 가입한 보험: 보장분석 PDF의 상품별 가입현황(회사 담보명·가입금액)을 계약마다 보여 주고, 담보 이름으로 쉬운 뜻을 붙인다.
+// 설명은 담보 이름으로 본 일반적인 뜻이다. 회사마다 조건이 달라 금액·조건은 증권·약관을 따른다.
+function conExplain(n, sig, kind){
+  var s = (n + "|" + sig).replace(/\s/g, ""), dis = /질병/.test(s) && !/상해/.test(s), inj = /상해|재해/.test(s) && !/질병/.test(s), who = dis ? "병으로 " : inj ? "다쳐서 " : "";
+  if (kind === "실손" && /입원/.test(s)) return "입원해서 실제 낸 병원비를 가입금액까지 돌려받아요 (자기부담금은 빼고)";
+  if (kind === "실손" && /통원|외래|처방|조제/.test(s)) return "외래 진료비·약값으로 실제 낸 돈을 하루 한도까지 돌려받아요 (자기부담금은 빼고)";
+  if (/벌금/.test(s)) return "운전하다 사고를 내 받은 벌금을 실제 금액만큼, 가입금액까지";
+  if (/처리지원/.test(s)) return "운전하다 사고로 피해자와 형사 합의할 때 합의금을 가입금액까지";
+  if (/변호사/.test(s)) return "운전하다 사고로 변호사를 쓸 때 선임 비용을 가입금액까지";
+  if (/배상/.test(s)) return "일상생활 중 남에게 피해를 줘 배상해야 할 때 실제 손해를 가입금액까지 (자기부담금 있음)";
+  if (/부상치료/.test(s)) return "자동차 사고로 다치면 부상 등급에 따라 정해진 금액";
+  if (/사망/.test(s) && /후유/.test(s)) return "다쳐서 사망하거나 큰 장해가 남으면 가입금액";
+  if (/사망/.test(s)) return (dis ? "병으로" : inj ? "다쳐서" : "") + " 사망하면 가족에게 가입금액";
+  if (/후유/.test(s) && /3[-~]100|3%이상/.test(s)) return who + "장해가 남으면 장해 정도(3%~100%)만큼 가입금액의 일정 비율";
+  if (/후유/.test(s)) return who + "장해지급률 80% 이상의 큰 장해가 남으면 가입금액";
+  if (/유사암|소액암|갑상선|제자리|경계성|대장점막/.test(s) && !/(유사암|소액암)[^)]*제외/.test(s)) return "갑상선암·제자리암 같은 유사암을 진단받으면 가입금액";
+  if (/재진단/.test(s)) return "암을 다시 진단받으면(재발·전이 등) 가입금액";
+  if (/암/.test(s) && /진단/.test(s)) return "암 진단을 받으면 한 번에 받는 목돈";
+  if (/암/.test(s) && /수술/.test(s)) return "암으로 수술받으면 가입금액";
+  if (/암/.test(s) && /입원/.test(s)) return "암으로 입원하면 하루 가입금액";
+  if (/암/.test(s)) return "암 치료를 받으면 약관에서 정한 금액";
+  if (/뇌졸중/.test(s)) return "뇌출혈·뇌경색(뇌졸중)으로 진단받으면 가입금액";
+  if (/뇌출혈/.test(s)) return "뇌출혈로 진단받으면 가입금액 (뇌졸중보다 좁아요)";
+  if (/뇌혈관/.test(s) && /수술/.test(s)) return "뇌혈관질환으로 수술받으면 가입금액";
+  if (/뇌혈관/.test(s)) return "뇌혈관질환 전체(뇌졸중보다 넓음)로 진단받으면 가입금액";
+  if (/허혈/.test(s) && /수술/.test(s)) return "협심증 등 허혈성심장질환으로 수술받으면 가입금액";
+  if (/심근경색/.test(s)) return "급성심근경색으로 진단받으면 가입금액 (허혈성심장질환보다 좁아요)";
+  if (/허혈/.test(s)) return "협심증을 포함한 허혈성심장질환으로 진단받으면 가입금액";
+  if (/화상/.test(s)) return "큰 화상으로 진단받으면 가입금액";
+  if (/골절/.test(s)) return "다쳐서 뼈가 부러지면 가입금액";
+  if (/치아|보철|임플란트/.test(s)) return "치아 치료(보철·임플란트 등)를 받으면 정해진 금액";
+  if (/이식/.test(s)) return "장기·조혈모세포 이식수술을 받으면 가입금액";
+  if (/간병/.test(s)) return "입원해 간병인을 쓰거나 지원받을 때 하루 금액";
+  if (/진단/.test(s)) return "약관에서 정한 병으로 진단받으면 가입금액";
+  if (/수술/.test(s)) return who + "약관에서 정한 수술을 받으면 1회당 가입금액";
+  if (/입원/.test(s)) return who + "입원하면 하루 가입금액";
+  if (/통원/.test(s)) return who + "통원 치료를 받으면 정해진 금액";
+  return "약관에서 정한 일이 생기면 가입금액";
+}
+function conTables(maxRows){
+  var out = [];
+  (M.d.conList || []).forEach(function(c){
+    var k = Math.max(1, Math.ceil(c.rows.length / maxRows)), per = Math.ceil(c.rows.length / k) || 1; // 긴 계약은 고르게 나눈다
+    for (var i = 0; i < c.rows.length || i === 0; i += per) {
+      out.push({ c: c, rows: c.rows.slice(i, i + per), cont: i > 0 });
+      if (!c.rows.length) break;
+    }
+  });
+  return out;
+}
+function conTable(x, pt){
+  var c = x.c;
+  return '<table class="n con' + (pt ? ' conp' : '') + '"><colgroup><col style="width:34%"><col style="width:15%"><col></colgroup><tr class="grp"><td colspan="3"><b>' + esc(c.co) + '</b> · ' + esc(c.prod) + (x.cont ? ' (이어서)' : '') + '<span>월 ' + wonFull(c.prem) + '</span></td></tr>'
+    + x.rows.map(function(r){ return '<tr><td>' + esc(r.n) + (r.kind === "실손" ? ' <small>실손</small>' : '') + '</td><td class="ca">' + won(r.amt) + '</td><td class="cx">' + esc(conExplain(r.n, r.sig, r.kind)) + '</td></tr>'; }).join('') + '</table>';
+}
+function conSection(){
+  var list = M.d.conList || [];
+  return '<div class="st"><h2>🗂️ 지금 가입한 보험 ' + list.length + '건</h2><small>보장분석 상품별 가입현황 · 설명은 담보 이름으로 본 일반적인 뜻</small></div><div class="colwrap one">' + conTables(14).map(function(x){ return conTable(x, false); }).join('') + '</div>'
+    + '<div class="note">금액은 가입금액이에요. 회사마다 지급 조건이 달라서, 정확한 조건은 각 보험의 증권과 약관을 확인해 주세요.</div>';
+}
+function conSlides(kick, src){
+  // 한 장에 담보 18줄까지: 작은 계약은 함께 담고, 긴 계약은 나눈 조각을 차례로 채운다
+  var parts = conTables(18), groups = [], cur = null;
+  parts.forEach(function(x){ if (!cur || cur.rows + x.rows.length > 18) { cur = { list: [], rows: 0 }; groups.push(cur); } cur.list.push(x); cur.rows += x.rows.length; });
+  var n = groups.length;
+  return groups.map(function(gp, i){
+    var one = gp.list.length === 1, x = gp.list[0];
+    return '<div class="slide">' + kick('지금 가입한 보험 (' + (i + 1) + '/' + n + ')')
+      + (one ? '<h2>' + esc(x.c.co) + ' <em>' + esc(x.c.prod) + '</em></h2><p class="sub">월 보험료 ' + wonFull(x.c.prem) + ' · 담보 ' + x.c.rows.length + '가지</p>' : '<h2>지금 가입한 <em>보험</em></h2><p class="sub">' + gp.list.map(function(y){ return esc(y.c.co) + ' 월 ' + wonFull(y.c.prem); }).join(' · ') + '</p>')
+      + gp.list.map(function(y){ return conTable(y, true); }).join('') + src('보장분석 상품별 가입현황 기준 · 설명은 담보 이름으로 본 일반적인 뜻이에요 · 정확한 조건은 각 보험의 증권·약관') + '</div>';
+  });
+}
 // 제안 담보 표: 회사 담보 묶음 대신 진단비·치료비·상해 수술비·질병 수술비처럼 같은 종류끼리 모은다
 var PROP_GROUPS = [
   { icon: "💗", name: "사망·후유장해", re: /사망|후유/ },
@@ -907,6 +980,7 @@ function renderSum(){
   var glChunks = [];
   gl.forEach(function(x){ for (var ci = 0; ci < x.rows.length; ci += 8) glChunks.push({ g: ci ? { icon: x.g.icon, name: x.g.name + ' (이어서)' } : x.g, rows: x.rows.slice(ci, ci + 8) }); });
   if (M.grown.length) h += '<div class="st"><h2>📋 이번에 제안하는 담보 ' + M.grown.length + '가지</h2><small>가입금액 · 지급 방식</small></div><div class="colwrap">' + glChunks.map(function(x){ return tbl([x]); }).join('') + '</div>';
+  else if (d.noProp && d.conList && d.conList.length) h += conSection();
   h += covCharts();
   h += '<div class="warn"><b>꼭 확인해 주세요</b> · 🏥는 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 나와요. · 가입 후 90일·1년 안에는 줄어드는 담보가 있어요.</div>';
   h += foot(2) + '</div>';
@@ -1008,6 +1082,7 @@ function renderPt(){
       + src('가입금액은 설계서 기준 · 🏥 = 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 · 실제 지급은 약관 기준') + '</div>');
   }
 
+  if (!M.grown.length && d.noProp && d.conList && d.conList.length) conSlides(kick, src).forEach(function(s){ P.push(s); });
   P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비를 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
   P.push('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
   // 5. 치료 예시 2개씩, 마지막 장에 확인사항
@@ -1108,7 +1183,8 @@ function fillGaps(){
     }
     if (!cw) return;
     np = document.createElement('div'); np.className = 'page';
-    np.innerHTML = pg.querySelector('.ph').outerHTML + '<div class="st"><h2>📋 제안 담보 (이어서)</h2></div><div class="colwrap"></div>' + pg.querySelector('.pf').outerHTML;
+    var hd0 = cw.previousElementSibling && cw.previousElementSibling.querySelector('h2'), hdT = hd0 ? hd0.textContent.replace(/\s*\d+(가지|건)$/, '') : '📋 제안 담보';
+    np.innerHTML = pg.querySelector('.ph').outerHTML + '<div class="st"><h2>' + esc(hdT) + ' (이어서)</h2></div><div class="' + cw.className + '"></div>' + pg.querySelector('.pf').outerHTML;
     pg.parentNode.insertBefore(np, pg.nextSibling);
     var ncw = np.querySelector('.colwrap'), nf = np.querySelector('.pf'), n;
     while ((n = cw.nextElementSibling) && !n.classList.contains('pf')) np.insertBefore(n, nf);
@@ -1301,7 +1377,7 @@ function parseAnalysis(pages){
       var c = cellsOf(l.t);
       if (c.length >= 2 && /^\d+$/.test(c[0]) && /^(정액|실손)$/.test(c[1])) {
         var a = c.length === 5 ? amtMan(c[4]) : null;
-        if (a === null) r.odd++; else r.extra.push({ co: c[2], sig: c[3], amt: a, ci: r.list.length - 1 });
+        if (a === null) r.odd++; else r.extra.push({ co: c[2], sig: c[3], amt: a, kind: c[1], ci: r.list.length - 1 });
         return;
       }
       // 별첨 상품별 가입현황: 쪽마다 회사명 → 상품명 → (계약자 줄은 건너뜀) → 보험기간·월 보험료
@@ -1397,6 +1473,7 @@ function buildFromPdf(ana, prop, who){
   D.agent = who.agent || prop.agent || ana.agent || ""; D.branch = who.branch || (prop.branch || ana.branch ? "메리츠화재 " + (prop.branch || ana.branch) : "");
   var gone = (ana.list || []).filter(function(x, i){ return skip[i]; });
   D.skipped = gone.map(function(x){ return x.co + " " + x.prod; });
+  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
   D.contracts = ana.contracts - gone.length; D.premiumAdd = prop.total;
   D.premiumNow = Math.max(0, ana.premium - gone.reduce(function(s, x){ return s + x.prem; }, 0));
   var sum = prop.riders.reduce(function(s, x){ return s + x.prem; }, 0);
