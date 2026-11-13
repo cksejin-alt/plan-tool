@@ -622,6 +622,7 @@ function covAxis(n){
   if (/벌금/.test(s)) return ["t3"];
   if (/배상/.test(s)) return ["l1"];
   if (/부상치료/.test(s)) return ["t4"];
+  if (/신골절/.test(s)) return ["o2"]; // "(치아파절포함)"이 붙어도 골절 칸
   if (/치아|보철|임플란트/.test(s)) return ["o1"];
   if (/골절|화상/.test(s)) return ["o2"];
   return ["o9"];
@@ -697,6 +698,11 @@ function careTerm(n){
   }
   return { when: who + " 간호·간병통합서비스 병동에 입원하면 " + (long ? "180일을 넘는 날부터 " : "") + "하루 가입금액" + (long ? " (요양·정신·한방병원 제외)" : ""), note: long ? "181일 이상 입원했을 때 · 1회 입원당 185일까지" : (p.per === "180" ? "1회 입원당 180일까지" : "") };
 }
+// 신골절치료비: 약관 별표39 지급률(2026-10-27 분석,  2_자료/회사자료/신골절치료비_분석.md)
+function fracTerm(n){
+  if (!/신골절치료비/.test(n.replace(/\s/g, ""))) return null;
+  return { when: "다쳐서 뼈가 부러지면(약관 신골절 분류표) 부러진 곳과 수술 여부에 따라 가입금액의 2%~50% — 예) 손목 수술 18%, 다리 수술 24%, 척추·골반 수술 40%, 손가락 그 외 3%", note: "1사고당 · 같은 사고로 여러 곳이면 합산(같은 부위는 높은 것 하나) · 한 사고 최대 가입금액 · 골다공증으로 인한 골절은 3%" };
+}
 function careBox(){
   var cells = {}, any = false;
   M.all.forEach(function(it){
@@ -720,7 +726,7 @@ function careBox(){
 // 제안 담보 표: 회사 담보 묶음 대신 진단비·치료비·상해 수술비·질병 수술비처럼 같은 종류끼리 모은다
 var PROP_GROUPS = [
   { icon: "💗", name: "사망·후유장해", re: /사망|후유/ },
-  { icon: "🩺", name: "진단비", re: /진단/ },
+  { icon: "🩺", name: "진단비", re: /진단|신골절/ },
   { icon: "🩹", name: "상해 수술비", re: /상해.*수술|수술.*상해/ },
   { icon: "🔪", name: "질병 수술비", re: /수술/ },
   { icon: "💊", name: "치료비 모음", re: /치료비|항암|방사선|혈전/ },
@@ -984,7 +990,7 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = UT[it.n][(+it.now || 0) + (+it.add || 0)]; when = ut ? UW[it.n](ut) : '이 가입금액의 항목별 금액은 약관 지급표로 확인해 주세요.'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(g.name) + '</span>' + payTag(it.n) + '</div>'
@@ -1372,7 +1378,7 @@ function buildFromPdf(ana, prop, who){
       matched++; return;
     }
     var sp = /다빈치로봇암수술비\(특정암\)/.test(nm);
-    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, unv: !sp });
+    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, unv: !sp && !fracTerm(nm) });
   });
   var i130 = byN["130대 질병수술비 (11가지)"], keys130 = Object.keys(s130);
   i130.add = keys130.length ? Math.max.apply(null, keys130.map(function(k){ return s130[k]; })) : 0;
