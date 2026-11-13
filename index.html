@@ -183,6 +183,7 @@
   .sgk{display:inline-block;font-size:9px;font-weight:800;color:#fff;background:var(--red);border-radius:4px;padding:1px 5px;margin-bottom:2px} .inj .sgk{background:#2563EB}
   .sgp2{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:10px} .sgp2 span{background:var(--bg);border-radius:6px;padding:2px 6px;white-space:nowrap} .sgp2 span.hp{background:var(--purbg);color:#5B21B6} .sgp2 i{font-style:normal;color:var(--sub);font-weight:800}
   .sgt{text-align:right} .sgt small{display:block;font-size:9.5px;color:var(--sub)} .sgt b{font-size:20px;font-weight:900;color:var(--red);letter-spacing:-.5px}
+  .sgp2 span.sgno{background:none;border:0;color:var(--sub);font-weight:600;padding-left:0} .sgt b.sgnob{color:var(--sub)}
   .sgp .sgr{grid-template-columns:230px 1fr 150px;padding:12px 16px;border-radius:14px} .sgp .sgl b{font-size:18px} .sgp .sgl small{font-size:13px}
   .sgp .sgk{font-size:12px;padding:2px 8px} .sgp .sgp2{font-size:13.5px;gap:5px} .sgp .sgp2 span{padding:4px 8px} .sgp .sgt small{font-size:13px} .sgp .sgt b{font-size:32px}
   .sgp{gap:9px;margin-top:8px}
@@ -887,13 +888,32 @@ function surgRows(){
   // 골절 진단비(1사고당 정액)와 신골절치료비(가입금액 × 부위별 지급률)는 담보 이름으로 찾는다
   var fracDx = function(f){ return M.all.filter(function(it){ return /골절/.test(it.n) && /진단/.test(it.n) && !/신골절/.test(it.n); }).reduce(function(s, it){ return s + f(it.n); }, 0); };
   var newFrac = function(f){ return M.all.filter(function(it){ return /신골절/.test(it.n); }).reduce(function(s, it){ return s + f(it.n); }, 0); };
+  // 보장분석에 있는 다른 보험의 수술비: 일반 1~5종(1~7종) 수술비, 그 병에 맞는 뇌혈관·심장 수술비만 더한다.
+  // 현황표 합계(질병수술비·상해수술비)에 이미 들어간 담보와 특정질병·암·이식 수술비는 빼서 두 번 세지 않는다.
+  var conRows = [].concat.apply([], (M.d.conList || []).map(function(c){ return c.rows || []; }));
+  var otherSurg = function(e){
+    var out = [];
+    conRows.forEach(function(r){
+      var nm = String(r.n || "").replace(/\s/g, ""), sg = String(r.sig || "").replace(/\s/g, ""), m;
+      if (r.kind === "실손" || !/수술/.test(nm) || ANA_MAP[sg] || !(+r.amt > 0)) return;
+      var dis = /질병/.test(nm), inj = /상해|재해/.test(nm);
+      if (e.k === "질병" ? inj && !dis : dis && !inj) return;
+      if (e.jong && !/암|이식|로봇|특정|\d+대|비뇨|부인|여성|남성|치아|골절|화상|뇌|심장|허혈|순환/.test(nm)) {
+        if ((m = nm.match(/(\d)[-~～](\d)종/))) { if (e.jong >= +m[1] && e.jong <= +m[2]) out.push(["다른 보험 " + m[1] + "~" + m[2] + "종 수술비※", +r.amt, +r.amt]); }
+        else if ((m = nm.match(/(\d)종/)) && +m[1] === e.jong) out.push(["다른 보험 " + m[1] + "종 수술비", +r.amt, +r.amt]);
+      }
+      if (e.k === "질병" && e.c130 === "뇌혈관질환" && /뇌혈관질환수술/.test(nm)) out.push(["뇌혈관질환 수술비", +r.amt, +r.amt]);
+      if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? "허혈성심장질환 수술비(허혈성이면)" : "심장질환 수술비", +r.amt, +r.amt]);
+    });
+    return out;
+  };
   return SURG_EX.map(function(e){
     var parts = e.k === "질병"
       ? [[e.jong + "종 수술비", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130대(" + e.c130 + ")", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["질병수술비", tv("질병 수술비"), tn("질병 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
       : (e.jong ? [[e.jong + "종 수술비", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["상해수술비", tv("상해 수술비"), tn("상해 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]] : [])
         .concat(e.frac ? [["골절 진단비", fracDx(tv), fracDx(tn)]] : [])
         .concat(e.nf ? [["신골절치료비 " + e.nf + "%", newFrac(tv) * e.nf / 100, newFrac(tn) * e.nf / 100]] : []);
-    parts = parts.filter(function(x){ return x[1] > 0; });
+    parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
   });
@@ -912,12 +932,17 @@ function surgTable(pt, only){
   var rows = surgRows().filter(function(r){ return !only || r.e.k === only; }), mx = Math.max.apply(null, rows.map(function(r){ return r.tot; }));
   var h = pt ? '' : '<div class="st"><h2>🔪 수술 한 번 받으면 이만큼</h2><small>수술 1회당 · 상급종합병원 · 가입 1년 이후</small></div>';
   h += (only === "상해" ? '' : surgNeed(pt)) + '<div class="sg' + (pt ? ' sgp' : '') + '">';
+  var star = rows.some(function(r){ return r.parts.some(function(x){ return /※/.test(x[0]); }); });
   rows.forEach(function(r){
     h += '<div class="sgr ' + (r.e.k === "상해" ? 'inj' : '') + '"><div class="sgl"><span class="sgk">' + r.e.k + '</span><b>' + esc(r.e.t) + '</b><small>' + esc(r.e.ex) + ' · ' + (r.e.jong ? r.e.jong + '종이라면' : '수술 없음') + '</small></div>'
-       + '<div class="sgp2">' + r.parts.map(function(x){ return '<span class="' + (x[3] ? 'hp' : '') + '">' + x[0] + ' ' + won(x[1]) + '</span>'; }).join('<i>+</i>') + '</div>'
-       + '<div class="sgt"><small>현재 ' + curW(r.now) + '</small><b>' + won(r.tot) + '</b></div></div>';
+       + (r.tot > 0
+         ? '<div class="sgp2">' + r.parts.map(function(x){ return '<span class="' + (x[3] ? 'hp' : '') + '">' + x[0] + ' ' + won(x[1]) + '</span>'; }).join('<i>+</i>') + '</div>'
+           + '<div class="sgt"><small>현재 ' + curW(r.now) + '</small><b>' + won(r.tot) + '</b></div></div>'
+         : '<div class="sgp2"><span class="sgno">' + (M.d.noProp ? '지금 보험엔 이 수술에 맞는 담보가 없어요' : '이 수술에 맞는 담보가 없어요') + '</span></div>'
+           + '<div class="sgt"><small>현재</small><b class="sgnob">없음</b></div></div>');
   });
-  return h + '</div>' + (pt ? '' : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시). 골절 진단비·신골절치료비는 1사고당이고, 신골절치료비는 부러진 곳과 수술 여부에 따라 가입금액의 일정 %가 나와요.</div>');
+  var starNote = star ? ' ※다른 보험의 1~5종 수술비는 보장분석의 가입금액으로 셌어요. 회사마다 종별 금액이 달라서 증권을 꼭 확인해 주세요.' : '';
+  return h + '</div>' + (pt ? (star ? '<div class="sns">' + starNote.trim() + '</div>' : '') : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시). 골절 진단비·신골절치료비는 1사고당이고, 신골절치료비는 부러진 곳과 수술 여부에 따라 가입금액의 일정 %가 나와요.' + starNote + '</div>');
 }
 
 // ---------- ① 요약형 ----------
