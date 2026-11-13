@@ -937,10 +937,10 @@ function renderSum(){
      + '<div><span>늘어나는 보장</span><b>' + M.grown.length + '가지</b></div>'
      + '<div class="hi"><span>아플 때 최대로 늘어나는 돈</span><b>' + (maxUp ? '+' + won(maxUp.aft - maxUp.now) : '-') + '</b></div></div>';
   h += '<div class="st"><h2>💰 아프면 받는 돈</h2><small>담보를 모두 더한 금액 · 가입 1년 이후 예시</small></div>'
-     + '<table class="n"><tr><th>이런 치료를 받으면</th>' + (d.noProp ? '<th>지금 보험으로 받는 돈</th>' : '<th>현재 보험</th><th>제안 후</th><th>늘어나는 돈</th>') + '<th>🏥 상급종합병원 치료 시</th></tr>';
+     + '<table class="n"><tr><th>이런 치료를 받으면</th><th>현재 보험</th><th>제안 후</th><th>늘어나는 돈</th><th>🏥 상급종합병원 치료 시</th></tr>';
   M.js.forEach(function(x){
     h += '<tr><td><b>' + x.j.icon + ' ' + esc(x.j.title) + '</b><br><small style="color:#6B7280">' + esc(x.j.case) + '</small></td>'
-       + (d.noProp ? '<td class="big">' + won(x.now) + '</td>' : '<td>' + curW(x.now) + '</td><td class="big">' + won(x.aft) + '</td><td class="plus">+' + won(x.aft - x.now) + '</td>') + '<td class="hp">' + (x.hp ? '+' + won(x.hp) : '-') + '</td></tr>';
+       + '<td>' + curW(x.now) + '</td><td class="big">' + won(x.aft) + '</td><td class="plus">' + (x.aft > x.now ? '+' + won(x.aft - x.now) : '-') + '</td><td class="hp">' + (x.hp ? '+' + won(x.hp) : '-') + '</td></tr>';
   });
   h += '</table>';
   var H = SHARE.heart, B = SHARE.brain;
@@ -1002,7 +1002,7 @@ function renderPt(){
         + st.rows.map(function(r){ return '<li class="' + (r.hp ? 'hp' : r.isNew ? '' : 'ex') + '"><span>' + (r.hp ? '🏥 ' : '') + esc(r.label) + '</span><b>' + (r.ok ? won(r.aft) : '확인') + '</b></li>'; }).join('')
         + '</ul></div>'; }).join('');
     return '<div class="jb"><div class="jbh"><div><span class="jcase2">' + esc(x.j.case) + '</span><div class="jbt">' + x.j.icon + ' ' + esc(x.j.title) + '</div></div>'
-      + (d.noProp ? '<div class="jbn"><span>지금 보험으로</span><b>' + won(x.now) + '</b></div></div>' : '<div class="jbn"><span>현재 ' + curW(x.now) + ' →</span><b>' + won(x.aft) + '</b><i>+' + won(x.aft - x.now) + '</i></div></div>')
+      + '<div class="jbn"><span>현재 ' + curW(x.now) + ' →</span><b>' + won(x.aft) + '</b>' + (x.aft > x.now ? '<i>+' + won(x.aft - x.now) + '</i>' : '') + '</div></div>'
       + (x.hp ? '<div class="jhp3">🏥 이 중 <b>' + won(x.hp) + '</b>은 상급종합병원에서 치료해서 더 나오는 돈 · 일반 병원이면 ' + won(x.aft - x.hp) + '</div>' : '')
       + '<div class="csg">' + steps + '</div>'
       + ((x.j.notes || []).length ? '<div class="jn2">· ' + esc(x.j.notes[0]) + '</div>' : '') + '</div>';
@@ -1013,11 +1013,11 @@ function renderPt(){
   }
 
   // 1. 표지 + 핵심 3 + 보험료
-  var top3 = M.top.slice(0, 3);
+  var top3 = (d.noProp ? M.js.slice().sort(function(a, b){ return b.now - a.now; }) : M.top).slice(0, 3); // 제안이 없으면 지금 보험으로 많이 받는 순
   P.push('<div class="slide"><div class="cvb"><div class="cvk">보장 제안</div><div class="cvt">' + esc(d.customer) + ' 님을 위한<br>보장 이야기</div>'
     + '<div class="cvw">' + esc(d.agent) + ' 컨설턴트 · ' + esc(d.branch) + ' · ' + esc(d.date) + '</div></div>' + modeNote()
     + (d.noProp ? '<h3 class="h3">💰 지금 보험으로 <em>이만큼</em> 받아요</h3>' : '<h3 class="h3">💰 아프면 받는 돈이 <em>이렇게</em> 달라져요</h3>') + '<p class="sub">진단비·치료비·수술비를 한 번에 모두 더한 금액 · 가입 1년 이후 예시</p><div class="cards3">'
-    + top3.map(function(x){ return '<div class="c3"><div class="ic">' + x.j.icon + '</div><div><div class="t">' + esc(x.j.short || x.j.title) + '</div>' + (d.noProp ? '' : '<div class="was">현재 ' + curW(x.now) + '</div>') + (x.hp ? '<div class="hp">🏥 상급종합병원이면 ' + won(x.hp) + ' 포함</div>' : '') + '</div><div style="text-align:right"><div class="big">' + won(x.aft) + '</div>' + (d.noProp ? '' : '<span class="pl">+' + won(x.aft - x.now) + '</span>') + '</div></div>'; }).join('')
+    + top3.map(function(x){ return '<div class="c3"><div class="ic">' + x.j.icon + '</div><div><div class="t">' + esc(x.j.short || x.j.title) + '</div>' + (d.noProp ? '' : '<div class="was">현재 ' + curW(x.now) + '</div>') + (x.hp ? '<div class="hp">🏥 상급종합병원이면 ' + won(x.hp) + ' 포함</div>' : '') + '</div><div style="text-align:right"><div class="big">' + won(x.aft) + '</div>' + (x.aft > x.now ? '<span class="pl">+' + won(x.aft - x.now) + '</span>' : '') + '</div></div>'; }).join('')
     + '</div>' + (d.noProp ? '<div class="pm"><div><span>현재 월 보험료</span><b>' + curP(d) + '</b></div><div class="ar">·</div><div><span>가입 계약</span><b>' + d.contracts + '건</b></div><div class="ar">·</div><div class="hi"><span>지금 보장 담보</span><b>' + M.all.filter(function(it){ return +it.now > 0; }).length + '가지</b></div></div>' : '<div class="pm"><div><span>현재 월 보험료</span><b>' + curP(d) + '</b></div><div class="ar">+</div><div><span>이번 제안</span><b>' + wonFull(d.premiumAdd) + '</b></div><div class="ar">→</div><div class="hi"><span>늘어나는 보장</span><b>' + M.grown.length + '가지</b></div></div>')
     + src('실제 지급은 약관 기준') + '</div>');
 
