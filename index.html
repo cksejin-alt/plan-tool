@@ -928,8 +928,9 @@ function surgRows(){
     if (e.k === "질병" && /심장질환|뇌혈관질환/.test(e.c130)) [[R274, "순환계 통합치료비(수술)", 0], [R275, "🏥 상급종합·권역센터 순환계 통합치료비(수술)", 1]].forEach(function(q){
       var t = UT[q[0]], a = tv(q[0]), n = tn(q[0]);
       if (a > 0 && t[a]) parts.push([q[1], t[a].surg, n > 0 && t[n] ? t[n].surg : 0, q[2]]);
+      else if (a > 0) parts.push([q[1] + " · 가입금액 " + won(a) + " 지급표 확인", 0, 0, q[2], "chk"]); // 지급표에 없는 가입금액: 합계에서 빼고 표시만
     });
-    parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0; });
+    parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
   });
@@ -952,7 +953,7 @@ function surgTable(pt, only){
   rows.forEach(function(r){
     h += '<div class="sgr ' + (r.e.k === "상해" ? 'inj' : '') + '"><div class="sgl"><span class="sgk">' + r.e.k + '</span><b>' + esc(r.e.t) + '</b><small>' + esc(r.e.ex) + ' · ' + (r.e.jong ? r.e.jong + '종이라면' : '수술 없음') + '</small></div>'
        + (r.tot > 0
-         ? '<div class="sgp2">' + r.parts.map(function(x){ return '<span class="' + (x[3] ? 'hp' : '') + '">' + x[0] + ' ' + won(x[1]) + '</span>'; }).join('<i>+</i>') + '</div>'
+         ? '<div class="sgp2">' + r.parts.map(function(x){ return '<span class="' + (x[3] ? 'hp' : '') + '">' + x[0] + (x[4] === "chk" ? '' : ' ' + won(x[1])) + '</span>'; }).join('<i>+</i>') + '</div>'
            + '<div class="sgt"><small>현재 ' + curW(r.now) + '</small><b>' + won(r.tot) + '</b></div></div>'
          : '<div class="sgp2"><span class="sgno">' + (M.d.noProp ? '지금 보험엔 이 수술에 맞는 담보가 없어요' : '이 수술에 맞는 담보가 없어요') + '</span></div>'
            + '<div class="sgt"><small>현재</small><b class="sgnob">없음</b></div></div>');
