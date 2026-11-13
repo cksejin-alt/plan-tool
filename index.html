@@ -924,6 +924,11 @@ function surgRows(){
       : (e.jong ? [[e.jong + "종 수술비", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["상해수술비", tv("상해 수술비"), tn("상해 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]] : [])
         .concat(e.frac ? [["골절 진단비", fracDx(tv), fracDx(tn)]] : [])
         .concat(e.nf ? [["신골절치료비 " + e.nf + "%", newFrac(tv) * e.nf / 100, newFrac(tn) * e.nf / 100]] : []);
+    // 심장·뇌혈관 수술이면 특정순환계질환 통합치료비의 '수술' 항목도 나온다(가입금액별 지급표, 수술 1회당). 상급종합·권역센터 담보는 상급종합 수술이라 함께.
+    if (e.k === "질병" && /심장질환|뇌혈관질환/.test(e.c130)) [[R274, "순환계 통합치료비(수술)", 0], [R275, "🏥 상급종합·권역센터 순환계 통합치료비(수술)", 1]].forEach(function(q){
+      var t = UT[q[0]], a = tv(q[0]), n = tn(q[0]);
+      if (a > 0 && t[a]) parts.push([q[1], t[a].surg, n > 0 && t[n] ? t[n].surg : 0, q[2]]);
+    });
     parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
@@ -953,7 +958,7 @@ function surgTable(pt, only){
            + '<div class="sgt"><small>현재</small><b class="sgnob">없음</b></div></div>');
   });
   var starNote = star ? ' ※다른 보험의 1~5종 수술비는 보장분석의 가입금액으로 셌어요. 회사마다 종별 금액이 달라서 증권을 꼭 확인해 주세요.' : '';
-  return h + '</div>' + (pt ? (star ? '<div class="sns">' + starNote.trim() + '</div>' : '') : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시). 골절 진단비·신골절치료비는 1사고당이고, 신골절치료비는 부러진 곳과 수술 여부에 따라 가입금액의 일정 %가 나와요.' + starNote + '</div>');
+  return h + '</div>' + (pt ? (star ? '<div class="sns">' + starNote.trim() + '</div>' : '') : '<div class="note">종(1~5종)은 약관 수술분류표 기준이고 실제 수술의 종은 수술마다 달라요. 같은 병·같은 상해로 여러 번 수술하면 질병·상해수술비와 상급종합 수술비는 1번이에요(질병은 365일 지나면 다시). 골절 진단비·신골절치료비는 1사고당이고, 신골절치료비는 부러진 곳과 수술 여부에 따라 가입금액의 일정 %가 나와요. 특정순환계질환 통합치료비 수술 금액은 가입금액별 약관 지급표 기준이고 한 해 총액은 가입금액까지예요.' + starNote + '</div>');
 }
 
 // ---------- ① 요약형 ----------
@@ -1119,7 +1124,7 @@ function renderPt(){
   }
 
   if (!M.grown.length && d.noProp && d.conList && d.conList.length) conSlides(kick, src).forEach(function(s){ P.push(s); });
-  P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비를 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
+  P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비 (심장·뇌혈관은 순환계 통합치료비 수술 금액까지) 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
   P.push('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
   // 5. 치료 예시 2개씩, 마지막 장에 확인사항
   var js = M.js;
