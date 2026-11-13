@@ -710,12 +710,14 @@ function careBox(){
   M.all.forEach(function(it){
     var v = (+it.now || 0) + (+it.add || 0), p = careParse(it.n); if (!p || !(v > 0)) return;
     var col = p.kind === "use" ? (p.hosp === "nh" ? "useNh" : "useGen") : p.kind === "sup" && !p.add ? "sup" : "nis", key = p.who + "|" + col;
-    (cells[key] = cells[key] || []).push({ v: v, now: +it.now || 0, p: p, svc: it.svc || (p.kind === "sup" && !p.add && v < 1) }); any = true;
+    // 보장분석에서 온 지원일당은 보장분석에 적힌 금액(간병인 지원을 돈으로 본 금액)을 그대로 보여 준다
+    var ana = p.kind === "sup" && !p.add && +it.now > 0 && !(+it.add > 0);
+    (cells[key] = cells[key] || []).push({ v: v, now: +it.now || 0, p: p, ana: ana, svc: !ana && (it.svc || (p.kind === "sup" && !p.add && v < 1)) }); any = true;
   });
   var perTxt = { "30": "1~30일", "180": "1~180일", "181": "181일~", "": "기간 확인" };
   // 칸마다 1~180일(1~30일 포함)과 181일~ 두 줄을 늘 보여 주고, 없는 기간은 '없음'으로 표시한다
   var cell = function(who, col){
-    var xs = cells[who + "|" + col] || [], line = function(x){ return '<div><span class="cp' + (x.p.per === "181" ? ' l' : '') + '">' + perTxt[x.p.per] + '</span>' + (x.svc ? '<b>간병인 지원</b><small>안 쓰면 하루 ' + won(x.v) + '</small>' : '<b>' + won(x.v) + '</b>') + (x.p.add ? '<small>지원형 추가보장</small>' : '') + (x.p.yo ? '<small>요양성 특정질병</small>' : '') + (x.now ? '<small>현재 ' + curW(x.now) + '</small>' : '') + '</div>'; };
+    var xs = cells[who + "|" + col] || [], line = function(x){ return '<div><span class="cp' + (x.p.per === "181" ? ' l' : '') + '">' + perTxt[x.p.per] + '</span>' + (x.ana ? '<b>간병인 지원</b><small>보장분석 금액 하루 ' + won(x.v) + '</small>' : x.svc ? '<b>간병인 지원</b><small>안 쓰면 하루 ' + won(x.v) + '</small>' : '<b>' + won(x.v) + '</b>') + (x.p.add ? '<small>지원형 추가보장</small>' : '') + (x.p.yo ? '<small>요양성 특정질병</small>' : '') + (x.now ? '<small>' + (x.ana || x.now === x.v ? '지금 가입' : '현재 ' + curW(x.now)) + '</small>' : '') + '</div>'; };
     var sh = xs.filter(function(x){ return x.p.per !== "181"; }), lg = xs.filter(function(x){ return x.p.per === "181"; });
     return '<td>' + (sh.length ? sh.map(line).join('') : '<div class="cx"><span class="cp">1~180일</span>없음</div>') + (lg.length ? lg.map(line).join('') : '<div class="cx"><span class="cp l">181일~</span>없음</div>') + '</td>';
   };
@@ -829,7 +831,7 @@ function modeNote(){
 
   return s ? '<div class="warn" style="margin:0 0 10px"><b>안내</b> · ' + s + '</div>' : '';
 }
-function won(m){ if (+m > 0 && +m < 1) return Math.round(+m * 10000).toLocaleString("ko-KR") + "원"; m = Math.round(+m || 0); if (m === 0) return "0원"; if (m < 0) return "−" + won(-m); var e = Math.floor(m / 10000), r = m % 10000, s = ""; if (e) s += e + "억"; if (r) s += (s ? " " : "") + r.toLocaleString("ko-KR") + "만"; return s + "원"; }
+function won(m){ if (+m > 0 && +m < 1) return Math.round(+m * 10000).toLocaleString("ko-KR") + "원"; var fr = Math.round((+m - Math.floor(+m)) * 10000); if (fr > 0 && fr < 10000 && +m < 1000) return Math.floor(+m) + "만 " + fr.toLocaleString("ko-KR") + "원"; m = Math.round(+m || 0); if (m === 0) return "0원"; if (m < 0) return "−" + won(-m); var e = Math.floor(m / 10000), r = m % 10000, s = ""; if (e) s += e + "억"; if (r) s += (s ? " " : "") + r.toLocaleString("ko-KR") + "만"; return s + "원"; }
 function wonFull(w){ return (Math.round(+w || 0)).toLocaleString("ko-KR") + "원"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 function pct(v, t){ return (v / t * 100).toFixed(1) + "%"; }
@@ -1339,11 +1341,13 @@ var PROP_MAP = [
 ];
 var C130_KEY = { "심장질환": "심장질환", "뇌혈관질환": "뇌혈관질환", "특정31대질병": "특정31대", "다빈도61대질병": "다빈도61대", "특정다빈도29대질병": "특정다빈도29대", "백내장": "백내장", "관절염,생식기질환": "관절염·생식기", "후각특정질환": "후각특정질환", "치핵": "치핵", "유방의장애": "유방의 장애", "편도염": "편도염" };
 
-function amtMan(s){ // "1억8,200만원"·"4천만원"·"1백만원" → 만원
-  var m = String(s).replace(/[\s,원]/g, "").match(/^(?:(\d+)억)?(?:(\d+)천)?(?:(\d+)백)?(\d+)?(만)?$/);
+function amtMan(s){ // "1억8,200만원"·"4천만원"·"1백만원"·"13만5천"·"1억5,789만4천" → 만원
+  var m = String(s).replace(/[\s,원]/g, "").match(/^(?:(\d+)억)?(?:(\d+)천)?(?:(\d+)백)?(\d+)?(만)?(?:(\d+)천)?(?:(\d+)백)?(\d+)?$/);
   if (!m || !(m[1] || m[2] || m[3] || m[4])) return null;
+  if (!m[5] && (m[6] || m[7] || m[8])) return null;
   var v = (+m[1] || 0) * 10000 + (+m[2] || 0) * 1000 + (+m[3] || 0) * 100 + (+m[4] || 0);
-  return m[5] || m[1] ? v : v / 10000; // "5천원"처럼 만 단위가 없으면 원 → 만원
+  var low = ((+m[6] || 0) * 1000 + (+m[7] || 0) * 100 + (+m[8] || 0)) / 10000; // 만 아래 원 단위
+  return m[5] || m[1] ? v + low : v / 10000; // "5천원"처럼 만 단위가 없으면 원 → 만원
 }
 function pdfLines(items){
   var rows = [];
@@ -1383,7 +1387,7 @@ function cellsOf(t){ return t.split("|").map(function(c){ return c.replace(/\s/g
 
 // 보장분석: 현황표(담보·보장·권장)와 별첨 계약표(회사담보명·신정원담보명·가입금액). 계약자 줄은 읽지 않는다.
 function parseAnalysis(pages){
-  var r = { cov: {}, order: [], extra: [], list: [], skip: {}, premium: 0, contracts: 0, odd: 0 }, pend = null;
+  var r = { cov: {}, order: [], extra: [], list: [], skip: {}, premium: 0, contracts: 0, odd: 0 }, pend = null, glued = [];
   pages.forEach(function(lines){
     lines.forEach(function(l){
       var t = l.t.replace(/[\s|]/g, ""), m, re, got = [];
@@ -1401,8 +1405,10 @@ function parseAnalysis(pages){
       }
       var c = cellsOf(l.t);
       if (c.length >= 2 && /^\d+$/.test(c[0]) && /^(정액|실손)$/.test(c[1])) {
-        var a = c.length === 5 ? amtMan(c[4]) : null;
-        if (a === null) r.odd++; else r.extra.push({ co: c[2], sig: c[3], amt: a, kind: c[1], ci: r.list.length - 1 });
+        var a = c.length === 5 ? amtMan(c[4]) : c.length === 4 ? amtMan(c[3]) : null;
+        if (a === null) r.odd++;
+        else if (c.length === 5) r.extra.push({ co: c[2], sig: c[3], amt: a, kind: c[1], ci: r.list.length - 1 });
+        else glued.push({ raw: c[2], amt: a, kind: c[1], ci: r.list.length - 1, at: r.extra.length }); // 회사담보명이 길어 신정원담보명과 한 칸으로 붙은 줄
         return;
       }
       // 별첨 상품별 가입현황: 쪽마다 회사명 → 상품명 → (계약자 줄은 건너뜀) → 보험기간·월 보험료
@@ -1413,6 +1419,15 @@ function parseAnalysis(pages){
         else if (!/계약자|피보험자|보험기간|NO구분|가입담보명/.test(t)) { if (!k.co) k.co = l.t.trim(); else if (!k.prod) k.prod = l.t.trim(); }
       }
     });
+  });
+  // 붙은 줄: 끝에 붙은 신정원담보명(다른 줄에 나온 이름·현황표 이름·'기타' 중 가장 긴 것)을 떼어 낸다
+  var sigs = { "기타": 1 };
+  r.extra.forEach(function(x){ sigs[x.sig] = 1; }); r.order.forEach(function(k){ sigs[k] = 1; });
+  ["질병간병인지원입원일당", "상해간병인지원입원일당", "질병간병인사용입원일당", "상해간병인사용입원일당", "1인실입원일당", "질병입원일당", "상해입원일당"].forEach(function(k){ sigs[k] = 1; });
+  var keys = Object.keys(sigs).sort(function(a, b){ return b.length - a.length; });
+  glued.slice().reverse().forEach(function(g){
+    var sg = ""; for (var i = 0; i < keys.length; i++) if (g.raw.length > keys[i].length && g.raw.slice(-keys[i].length) === keys[i]) { sg = keys[i]; break; }
+    r.extra.splice(g.at, 0, { co: sg ? g.raw.slice(0, -sg.length) : g.raw, sig: sg || "기타", amt: g.amt, kind: g.kind, ci: g.ci });
   });
   return r;
 }
