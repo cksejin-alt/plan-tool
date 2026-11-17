@@ -1141,11 +1141,11 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || cycTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : '이 가입금액의 항목별 금액은 약관 지급표로 확인해 주세요.'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(g.name) + '</span>' + payTag(it.n) + '</div>'
-        + '<div class="rcn">' + (it.hosp ? '🏥 ' : '') + esc(it.n) + (it.sub ? ' <small>(' + esc(it.sub) + ')</small>' : '') + '</div>'
+        + '<div class="rcn">' + (it.hosp ? '🏥 ' : '') + esc(it.n) + (it.sub ? ' <small>(' + esc(it.sub) + ')</small>' : '') + (it.renew && !/갱신형/.test(it.n) ? ' <small>· 갱신형</small>' : '') + '</div>'
         + '<div class="rca">' + won(it.add) + (it.now ? ' <small>현재 ' + won(it.now) + ' + 추가</small>' : '') + '</div>'
         + (when && !it.unv ? '<div class="rcw">' + esc(when) + '</div>' : '<div class="rcw muted">지급 조건 확인 중 — 설계서 담보명: ' + esc(it.rider || it.n) + '</div>')
         + (note && !it.unv ? '<div class="rcx">' + esc(note) + '</div>' : '') + '</div>' });
@@ -1540,7 +1540,13 @@ function parseProposal(pages){
   });
   return r;
 }
-function cleanRider(s){ return s.replace(/\(통합간편(가입|심사형)\)/g, "").replace(/\(통합간편$/, "").replace(/^\(\d+년갱신\)/, ""); }
+// 갱신형 설계서는 담보명 앞에 '(10년갱신)갱신형'이 붙는다 → 떼고 읽고(갱신 여부는 renew로 따로 표시), 순환계Ⅱ 기본 담보는 같은 지급표라 기본 이름으로 맞춘다
+function cleanRider(s){ return s.replace(/\(통합간편(가입|심사형)\)/g, "").replace(/\(통합간편$/, "").replace(/^\(\d+년갱신\)/, "").replace(/^갱신형/, "").replace(/^특정순환계질환통합치료비Ⅱ\[특정순환계질환통합치료비\]$/, "특정순환계질환통합치료비"); }
+// 순환계 통합치료비Ⅱ의 '연간 주요치료Ⅱ N회 이상' 담보: 가입제안서 보장내용 기준(2026-11-17)
+function cycTerm(n){
+  var m = String(n).replace(/\s/g, "").match(/주요치료Ⅱ(\d)회이상/); if (!m) return null;
+  return { when: "특정순환계질환 치료로 받은 주요치료Ⅱ(혈전용해·종합병원 중환자실 4일 이상·수술·CRRT·인공호흡기·저체온·부분체외순환) 횟수가 한 해에 " + m[1] + "회 이상이면 연 1회 가입금액", note: "수술은 1회당 1번으로 셈 · 같은 날 수술은 1회 · 가입 1년 안에는 50%" };
+}
 // 두 PDF 결과로 새 DATA를 만든다.
 function buildFromPdf(ana, prop, who){
   var D = JSON.parse(TEMPLATE), byN = {};
@@ -1561,7 +1567,8 @@ function buildFromPdf(ana, prop, who){
   var oi = Object.keys(other).map(function(k){ return { n: k, now: other[k], rec: 0, add: 0 }; });
   var extraNew = [], careNew = [], s130 = {}, plus = { "상해": {}, "질병": {} }, matched = 0;
   prop.riders.forEach(function(x){
-    var nm = cleanRider(x.name), m;
+    var nm = cleanRider(x.name), m, renew = /갱신형|\d+년갱신/.test(x.name);
+    if (cycTerm(nm)) { extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: nm, renew: renew, unv: false }); matched++; return; }
     // 간병인·간호간병 일당은 병실 입원일당(1인실·2-3인실)과 다른 담보라 따로 둔다 → 간병인 보장 표
     if (careParse(nm)) { careNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: nm, svc: x.sup || undefined, unv: !TERMS[nm] && !careTerm(nm) }); return; }
     if ((m = nm.match(/^수술비Ⅱ\(1-5종\)\[(상해|질병)(\d)종\]/))) { var it5 = byN[m[1] + " " + m[2] + "종 수술비"]; it5.add = (+it5.add || 0) + x.amt; matched++; return; }
@@ -1571,10 +1578,11 @@ function buildFromPdf(ana, prop, who){
       var it = byN[PROP_MAP[i][1]];
       if (PROP_MAP[i][2]) it.add = Math.max(+it.add || 0, x.amt); else { it.add = (+it.add || 0) + x.amt; (it.parts = it.parts || []).push(x.amt); }
       if (!it.rider) { it.rider = nm; it.unv = !TERMS[nm]; }
+      if (renew) it.renew = 1;
       matched++; return;
     }
     var sp = /다빈치로봇암수술비\(특정암\)/.test(nm);
-    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, unv: !sp && !fracTerm(nm) && !lawyerTerm(nm) });
+    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, renew: renew, unv:!sp && !fracTerm(nm) && !lawyerTerm(nm) });
   });
   var i130 = byN["130대 질병수술비 (11가지)"], keys130 = Object.keys(s130);
   i130.add = keys130.length ? Math.max.apply(null, keys130.map(function(k){ return s130[k]; })) : 0;
