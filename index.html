@@ -760,6 +760,7 @@ function careBox(){
 }
 // 지금 가입한 보험: 보장분석 PDF의 상품별 가입현황(회사 담보명·가입금액)을 계약마다 보여 주고, 담보 이름으로 쉬운 뜻을 붙인다.
 // 설명은 담보 이름으로 본 일반적인 뜻이다. 회사마다 조건이 달라 금액·조건은 증권·약관을 따른다.
+function premTxt(c, long){ return c.paid ? (/일시납/.test(c.pay || "") ? "일시납 · 납입완료" : "납입완료") : (long ? "월 보험료 " : "월 ") + wonFull(c.prem); }
 function conExplain(n, sig, kind){
   var s = (n + "|" + sig).replace(/\s/g, ""), dis = /질병/.test(s) && !/상해/.test(s), inj = /상해|재해/.test(s) && !/질병/.test(s), who = dis ? "병으로 " : inj ? "다쳐서 " : "";
   if (kind === "실손" && /입원/.test(s)) return "입원해서 실제 낸 병원비를 가입금액까지 돌려받아요 (자기부담금은 빼고)";
@@ -811,7 +812,7 @@ function conTables(maxRows){
 }
 function conTable(x, pt){
   var c = x.c, old = c.start && c.start < "2023";
-  return '<table class="n con' + (pt ? ' conp' : '') + '"><colgroup><col style="width:34%"><col style="width:15%"><col></colgroup><tr class="grp"><td colspan="3"><b>' + esc(c.co) + '</b> · ' + esc(c.prod) + (x.cont ? ' (이어서)' : '') + '<span>' + (c.start ? esc(c.start) + ' 가입 · ' : '') + '월 ' + wonFull(c.prem) + '</span></td></tr>'
+  return '<table class="n con' + (pt ? ' conp' : '') + '"><colgroup><col style="width:34%"><col style="width:15%"><col></colgroup><tr class="grp"><td colspan="3"><b>' + esc(c.co) + '</b> · ' + esc(c.prod) + (x.cont ? ' (이어서)' : '') + '<span>' + (c.start ? esc(c.start) + ' 가입 · ' : '') + premTxt(c) + '</span></td></tr>'
     + x.rows.map(function(r){ var lw = old && /변호사/.test(r.n + r.sig); return '<tr><td>' + esc(r.n) + (r.kind === "실손" ? ' <small>실손</small>' : '') + '</td><td class="ca">' + won(r.amt) + '</td><td class="cx">' + (lw ? '<span class="lwx">⚠️ 2023년 이전 가입이라 보통 구속·기소(재판)된 경우만 나와요. 경찰 조사 단계는 보장 안 될 수 있어요 (약관 확인)</span>' : esc(conExplain(r.n, r.sig, r.kind))) + '</td></tr>'; }).join('') + '</table>';
 }
 function conSection(){
@@ -827,7 +828,7 @@ function conSlides(kick, src){
   return groups.map(function(gp, i){
     var one = gp.list.length === 1, x = gp.list[0];
     return '<div class="slide">' + kick('지금 가입한 보험 (' + (i + 1) + '/' + n + ')')
-      + (one ? '<h2>' + esc(x.c.co) + ' <em>' + esc(x.c.prod) + '</em></h2><p class="sub">월 보험료 ' + wonFull(x.c.prem) + ' · 담보 ' + x.c.rows.length + '가지</p>' : '<h2>지금 가입한 <em>보험</em></h2><p class="sub">' + gp.list.map(function(y){ return esc(y.c.co) + ' 월 ' + wonFull(y.c.prem); }).join(' · ') + '</p>')
+      + (one ? '<h2>' + esc(x.c.co) + ' <em>' + esc(x.c.prod) + '</em></h2><p class="sub">' + premTxt(x.c, 1) + ' · 담보 ' + x.c.rows.length + '가지</p>' : '<h2>지금 가입한 <em>보험</em></h2><p class="sub">' + gp.list.map(function(y){ return esc(y.c.co) + ' ' + premTxt(y.c); }).join(' · ') + '</p>')
       + gp.list.map(function(y){ return conTable(y, true); }).join('') + src('보장분석 상품별 가입현황 기준 · 설명은 담보 이름으로 본 일반적인 뜻이에요 · 정확한 조건은 각 보험의 증권·약관') + '</div>';
   });
 }
@@ -1457,8 +1458,10 @@ function parseAnalysis(pages){
       }
       // 별첨 상품별 가입현황: 회사명 → 상품명 → 계약자 줄(이름은 읽지 않음) → 보험기간·월 보험료.
       // 계약 하나가 여러 쪽으로 이어지거나 한 쪽에 계약이 둘 있어도, '계약자' 줄 바로 앞 두 줄로 새 계약을 시작한다.
-      if (/^계약자\/?피보험자/.test(t)) { if (recent.length >= 2) r.list.push({ co: recent[recent.length - 2], prod: recent[recent.length - 1], prem: 0 }); recent = []; return; }
+      if (/^계약자\/?피보험자/.test(t)) { if (recent.length >= 2) r.list.push({ co: recent[recent.length - 2], prod: recent[recent.length - 1], prem: 0, pay: (t.match(/납입주기\/납입기간\/만기(.+)$/) || [])[1] || "" }); recent = []; return; }
       var k = r.list[r.list.length - 1];
+      // 납입이 끝난 계약 표시(다른 화면 형식): 일시납 · 납입횟수 1/1회 · 납입률 100%
+      if (k && t.length < 40 && ((m = t.match(/납입횟수(\d+)\/(\d+)회/)) && +m[1] >= +m[2] || /납입률100%|일시납/.test(t))) k.done = true;
       if (k && !k.prem && (m = t.match(/^보험기간(\d{4})\.(\d{2})\.(\d{2})~.*월보험료([\d,]+)원/))) { k.prem = +m[4].replace(/,/g, ""); k.start = m[1] + "." + m[2] + "." + m[3]; return; }
       recent.push(l.t.trim()); if (recent.length > 2) recent.shift();
     });
@@ -1472,7 +1475,17 @@ function parseAnalysis(pages){
     var sg = ""; for (var i = 0; i < keys.length; i++) if (g.raw.length > keys[i].length && g.raw.slice(-keys[i].length) === keys[i]) { sg = keys[i]; break; }
     r.extra.splice(g.at, 0, { co: sg ? g.raw.slice(0, -sg.length) : g.raw, sig: sg || "기타", amt: g.amt, kind: g.kind, ci: g.ci });
   });
+  r.list.forEach(function(x){ x.paid = paidUp(x, new Date()); });
   return r;
+}
+// 납입이 끝난 계약(일시납, 또는 가입일부터 납입기간이 지난 계약)은 이제 매달 내지 않으므로 현재 월 보험료에서 뺀다(캡틴 지시 2026-11-17)
+// 보장분석 PDF 안내와 같은 방식: 가입일·오늘 기준으로 납입기간이 다 찼으면 납입완료로 본다. 실제 납입 내역은 보험회사 확인.
+function paidUp(x, today){
+  var pay = String(x.pay || "").replace(/\s/g, "");
+  if (x.done || /일시납/.test(pay)) return true;
+  var m = pay.match(/(\d+)년(?!만기)/), s = String(x.start || "").split(".");
+  if (!m || /전기납|종신납/.test(pay) || s.length < 3 || +m[1] < 1) return false;
+  return new Date(+s[0] + +m[1], +s[1] - 1, +s[2]) <= today;
 }
 // 설계서: 담보 줄(번호·담보명·가입금액·보험료). 담보명이 위아래 줄로 나뉘면 합친다.
 function parseProposal(pages){
@@ -1556,11 +1569,16 @@ function buildFromPdf(ana, prop, who){
   D.agent = who.agent || prop.agent || ana.agent || ""; D.branch = who.branch || (prop.branch || ana.branch ? "메리츠화재 " + (prop.branch || ana.branch) : "");
   var gone = (ana.list || []).filter(function(x, i){ return skip[i]; });
   D.skipped = gone.map(function(x){ return x.co + " " + x.prod; });
-  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, start: x.start || "", rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
+  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, paid: !!x.paid, pay: x.pay || "", start: x.start || "", rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
   // 2023년 이전에 가입한 변호사 선임비용: 대부분 구속·기소된 경우만 보장(경찰 조사 단계는 2022년 말~2023년 상품부터)
   D.lawyerOld = D.conList.filter(function(c){ return c.start && c.start < "2023" && c.rows.some(function(r){ return /변호사/.test(r.n + r.sig); }); }).map(function(c){ return { co: c.co, start: c.start }; });
   D.contracts = ana.contracts - gone.length; D.premiumAdd = prop.total;
-  D.premiumNow = Math.max(0, ana.premium - gone.reduce(function(s, x){ return s + x.prem; }, 0));
+  // 현재 월 보험료: 계약마다 보험료를 다 읽었으면 '납입 중이고 체크한 계약'만 더한다. 못 읽은 계약이 있으면 첫 장 합계에서 뺀다.
+  var lst = ana.list || [], live = lst.filter(function(x, i){ return !skip[i] && !x.paid; });
+  D.paidList = lst.filter(function(x, i){ return !skip[i] && x.paid; }).map(function(x){ return { co: x.co, prod: x.prod, prem: x.prem, pay: x.pay || "" }; });
+  D.premiumNow = lst.length && lst.every(function(x){ return x.prem > 0; })
+    ? live.reduce(function(s, x){ return s + x.prem; }, 0)
+    : Math.max(0, ana.premium - gone.filter(function(x){ return !x.paid; }).reduce(function(s, x){ return s + x.prem; }, 0));
   var sum = prop.riders.reduce(function(s, x){ return s + x.prem; }, 0);
   return { data: D, check: { riders: prop.riders.length, matched: matched, unknown: extraNew.map(function(x){ return x.n; }), sum: sum, total: prop.total, cov: ana.order.length, covLost: ana.order.filter(function(k){ return !ANA_MAP[k] && !ANA_NEW[k]; }), others: oi.length, odd: ana.odd } };
 }
@@ -1570,7 +1588,7 @@ function conList(){
   var a = PDF_IN.ana, box = document.getElementById("pCon");
   if (!a || !a.list || !a.list.length) { box.innerHTML = ""; return; }
   box.innerHTML = '<div class="pcon"><b>현재 가입 상품 ' + a.list.length + '건</b><small>해지할 상품은 체크를 풀어 주세요. 체크한 상품만 현재 보장에 넣어요.</small>'
-    + a.list.map(function(x, i){ return '<label><input type="checkbox" data-ci="' + i + '"' + (a.skip[i] ? '' : ' checked') + '><span>' + esc(x.co) + ' · ' + esc(x.prod) + '</span><em>월 ' + wonFull(x.prem) + '</em></label>'; }).join('') + '</div>';
+    + a.list.map(function(x, i){ return '<label><input type="checkbox" data-ci="' + i + '"' + (a.skip[i] ? '' : ' checked') + '><span>' + esc(x.co) + ' · ' + esc(x.prod) + '</span><em>' + premTxt(x) + '</em></label>'; }).join('') + '</div>';
   [].forEach.call(box.querySelectorAll('input'), function(cb){ cb.onchange = function(){ if (cb.checked) delete a.skip[cb.dataset.ci]; else a.skip[cb.dataset.ci] = 1; document.getElementById("pResult").innerHTML = ""; }; });
 }
 function pdfStatus(){
@@ -1604,7 +1622,9 @@ function pdfBuild(){
   var c = out.check, sumOk = c.total && c.sum === c.total, h = !PDF_IN.prop ? '<div class="prc ok">보장분석 PDF로 현재 보장만 만들었어요. 제안 담보는 없어요.</div>' : '<div class="prc ' + (sumOk ? 'ok' : 'bad') + '">' + (sumOk ? '✅ ' + (PDF_IN.props.length > 1 ? '설계서 ' + PDF_IN.props.length + '개 합산 · ' : '') + '읽은 담보 ' + c.riders + '가지의 보험료 합이 설계서 합계(' + wonFull(c.total) + ')와 같아요.' : '⚠️ 읽은 담보 보험료 합 ' + wonFull(c.sum) + ' ≠ 설계서 합계 ' + wonFull(c.total) + ' — 빠진 담보가 있을 수 있어요. [숫자 고치기]로 꼭 확인해 주세요.') + '</div>';
   var unv = M.grown.filter(function(it){ return it.unv; });
   if (unv.length) h += '<div class="prc bad">⚠️ 약관을 아직 확인하지 않은 담보 ' + unv.length + '가지는 "지급 조건 확인 중"으로 나오고 치료 예시 합계에서 빠져요: ' + unv.map(function(it){ return esc(it.n); }).join(", ") + '</div>';
-  if (c.covLost.length) h += '<div class="prc bad">⚠️ 연결하지 못한 보장분석 항목: ' + c.covLost.map(esc).join(", ") + '</div>';
+  var pl = DATA.paidList || [];
+  if (pl.length) h += '<div class="prc ok">💡 납입이 끝난 계약 ' + pl.length + '건(' + pl.map(function(x){ return esc(x.co) + ' ' + esc(x.pay || "납입완료"); }).join(', ') + ')은 현재 월 보험료에서 뺐어요. 보장은 그대로 넣었어요.</div>';
+  if (c.covLost.length) h +='<div class="prc bad">⚠️ 연결하지 못한 보장분석 항목: ' + c.covLost.map(esc).join(", ") + '</div>';
   if (c.odd) h += '<div class="prc bad">⚠️ 계약표에서 읽지 못한 줄 ' + c.odd + '개 — 그 밖의 현재 보장에 빠졌을 수 있어요.</div>';
   var chk = M.js.filter(function(x){ return x.steps.some(function(s){ return s.rows.some(function(r){ return !r.ok; }); }); }).length;
   if (chk) h += '<div class="prc bad">⚠️ 치료 예시 ' + chk + '가지에 "확인" 표시가 있어요. 통합치료비 가입금액이 약관 지급표(기본형 4천만·8천만·1억 / Ⅱ 4천만·7천만·1억 / 순환계 2천만·3천만·5천만·8천만·1억)에 없는 금액이라 그 금액은 합계에서 빠졌어요.</div>';
