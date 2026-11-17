@@ -652,7 +652,7 @@ function covAxesData(){
   // 1~5종 수술비는 수술 한 번에 하나만 해당하므로 가장 큰 금액만, 입원일당도 가장 큰 하루 금액만 센다
   var total = function(x, f){
     var tier = 0, sum = 0;
-    x.items.forEach(function(it){ var v = f(it); if (x.a.max || /[1-5]종 수술비$/.test(it.n)) tier = Math.max(tier, v); else sum += v; });
+    x.items.forEach(function(it){ var v = f(it); if (x.a.max || /[1-5]종 수술비$/.test(it.n) || /부상치료비.*\d+-\d+급/.test(it.n.replace(/\s/g, ""))) tier = Math.max(tier, v); else sum += v; });
     return sum + tier;
   };
   Object.keys(by).forEach(function(k){ var x = by[k]; x.now = total(x, function(it){ return +it.now || 0; }); x.aft = total(x, function(it){ return (+it.now || 0) + (+it.add || 0); }); });
@@ -930,12 +930,23 @@ function surgRows(){
     var out = [];
     conRows.forEach(function(r){
       var nm = String(r.n || "").replace(/\s/g, ""), sg = String(r.sig || "").replace(/\s/g, ""), m;
+      // 지금 가입한 특정순환계질환 통합치료비: 심장·뇌혈관 수술이면 가입금액별 지급표의 '수술' 금액
+      if (e.k === "질병" && /심장질환|뇌혈관질환/.test(e.c130) && /특정순환계질환통합치료비/.test(nm) && !/주요손상/.test(nm) && +r.amt > 0) {
+        var hi = /상급종합|권역/.test(nm), tb = UT[hi ? R275 : R274][+r.amt], lb = hi ? "🏥 지금 보험 상급종합·권역센터 순환계 통합치료비(수술)" : "지금 보험 순환계 통합치료비(수술)";
+        out.push(tb ? [lb, tb.surg, tb.surg, hi ? 1 : 0] : [lb + " · 가입금액 " + won(+r.amt) + " 지급표 확인", 0, 0, hi ? 1 : 0, "chk"]);
+        return;
+      }
       if (r.kind === "실손" || !/수술/.test(nm) || ANA_MAP[sg] || !(+r.amt > 0)) return;
       var dis = /질병/.test(nm), inj = /상해|재해/.test(nm);
       if (e.k === "질병" ? inj && !dis : dis && !inj) return;
       if (e.jong && !/암|이식|로봇|특정|\d+대|비뇨|부인|여성|남성|치아|골절|화상|뇌|심장|허혈|순환/.test(nm)) {
         if ((m = nm.match(/(\d)[-~～](\d)종/))) { if (e.jong >= +m[1] && e.jong <= +m[2]) out.push(["다른 보험 " + m[1] + "~" + m[2] + "종 수술비※", +r.amt, +r.amt]); }
         else if ((m = nm.match(/(\d)종/)) && +m[1] === e.jong) out.push(["다른 보험 " + m[1] + "종 수술비", +r.amt, +r.amt]);
+      }
+      // 지금 가입한 메리츠 등 'N대 질병수술비(분류)' — 82대·130대 등 이름의 분류가 이 예시와 같으면 더한다
+      if (e.k === "질병" && e.c130 && (m = nm.match(/(\d+)대질병수술비[(\[](.+?)[)\]]/))) {
+        var cat = m[2], hit = e.c130 === "특정31대" ? /^특정\d+대질병$/.test(cat) : e.c130 === "다빈도61대" ? /^다빈도\d+대질병$/.test(cat) : cat === e.c130;
+        if (hit) out.push(["지금 보험 " + m[1] + "대 질병수술비(" + cat + ")", +r.amt, +r.amt]);
       }
       if (e.k === "질병" && e.c130 === "뇌혈관질환" && /뇌혈관질환수술/.test(nm)) out.push(["뇌혈관질환 수술비", +r.amt, +r.amt]);
       if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? "허혈성심장질환 수술비(허혈성이면)" : "심장질환 수술비", +r.amt, +r.amt]);
@@ -1378,7 +1389,7 @@ var PROP_MAP = [
   [/^암통합치료비\(기본형\)\(암중점/, "암 통합치료비 (기본형·암중점)"], [/^암통합치료비Ⅱ\(비급여/, "암 통합치료비Ⅱ (비급여)"],
   [/항암중입자방사선치료비/, "항암중입자방사선치료비"], [/^항암방사선약물치료비/, "항암방사선약물치료비"],
   [/다빈치로봇암수술비\(암\(특정암제외\)\)/, "다빈치 로봇 암수술비"],
-  [/^특정순환계질환통합치료비/, "특정순환계질환 통합치료비"], [/^상급종합병원,권역심뇌혈관질환센터특정순환계질환통합치료비/, "상급종합·권역센터 순환계 통합치료비"], [/^특정순환계질환\(주요손상및질환\)통합치료비/, "순환계(주요손상및질환) 통합치료비"],
+  [/^(?:갱신형)?특정순환계질환통합치료비/, "특정순환계질환 통합치료비"], [/^(?:갱신형)?상급종합병원,?권역심뇌혈관질환센터특정순환계질환통합치료비/,"상급종합·권역센터 순환계 통합치료비"], [/^특정순환계질환\(주요손상및질환\)통합치료비/, "순환계(주요손상및질환) 통합치료비"],
   [/^상급종합병원상해수술비/, "상급종합병원 상해수술비"], [/^상급종합병원질병수술비/, "상급종합병원 질병수술비"], [/^상해수술비/, "상해 수술비"], [/^질병수술비/, "질병 수술비"],
   [/^2-3인실상급종합병원질병입원일당/, "상급종합 2-3인실 입원일당"], [/^상급병실\(1인실\)상급종합병원질병입원일당/, "상급종합 1인실 입원일당"], [/^상급병실\(1인실\)종합병원질병입원일당/, "종합병원 1인실 질병입원일당"], [/^2-3인실종합병원질병입원일당/, "종합병원 2-3인실 질병입원일당"],
   [/일반상해입원일당/, "상해 입원일당 (1인실·2-3인실)", 1],
@@ -1505,6 +1516,19 @@ function parseProposal(pages){
       if (ai < 0 && cells.length === 2 && /^(?:[가-힣\/\s]*\s)?\d{1,4}$/.test(cells[0]) && /^[\d,]+$/.test(cells[1])) { // 간병인지원형: 번호 | 보험료, 가입금액은 위·아래 줄에 "간병인지원 / 또는 5천원"
         var side = near().map(function(o){ return o.t; }).join("|");
         if (/간병인지원/.test(side) && (m = side.match(/또는\s*([\d,]+\s*[천백만억]*\s*원)/))) { cells = [cells[0], m[1], cells[1]]; ai = 1; sup = true; }
+      }
+      // 현물급부형: 번호 | 담보명 | 보험료, 가입금액 칸은 위·아래 작은 줄에 "변호사선임 / 현물급부 / 또는 / 5백만원"
+      if (ai < 0 && cells.length >= 2 && /^[\d,]+$/.test(cells[cells.length - 1]) && /^(?:[가-힣\/\s]*\s)?\d{1,4}(\s|$)/.test(cells[0])) {
+        var wide = lines.filter(function(o, oi){ return oi !== li && Math.abs(o.y - l.y) <= 20 && o.x >= 300 && o.x < 480; });
+        if (wide.some(function(o){ return /현물급부/.test(o.t); })) {
+          var am = null; wide.forEach(function(o){ o.t.split("|").forEach(function(c){ c = c.trim(); if (am === null && /원$/.test(c) && amtMan(c) !== null) am = c; }); });
+          if (am) { cells = cells.slice(0, -1).concat([am, cells[cells.length - 1]]); ai = cells.length - 2; }
+        }
+        // 등급별 담보(예: 자동차사고부상치료비 1-14급): 대표 줄엔 보험료만, 아래 '┗' 줄마다 급수별 금액 → 가장 큰 금액을 가입금액으로
+        else if (/\d+-\d+급/.test(cells.join(""))) {
+          var top = 0; for (var j = li + 1; j < lines.length && j < li + 40; j++) { var lt = lines[j].t; if (!/┗/.test(lt)) { if (/^\s*\d{1,4}\s*\|/.test(lt)) break; continue; } var cs = lt.split("|"), v = amtMan(cs[cs.length - 1].trim()); if (v > top) top = v; }
+          if (top > 0) { cells = cells.slice(0, -1).concat([won(top), cells[cells.length - 1]]); ai = cells.length - 2; }
+        }
       }
       if (ai < 1 || !cells[ai + 1] || !/^[\d,\s]+$/.test(cells[ai + 1])) return;
       var head = cells.slice(0, ai), no = null, name = "";
