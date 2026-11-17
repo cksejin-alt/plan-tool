@@ -656,6 +656,10 @@ function covAxesData(){
     return sum + tier;
   };
   Object.keys(by).forEach(function(k){ var x = by[k]; x.now = total(x, function(it){ return +it.now || 0; }); x.aft = total(x, function(it){ return (+it.now || 0) + (+it.add || 0); }); });
+  // 변호사 선임 현물급부 선택 가능 담보: 회사가 변호사를 직접 보내 주므로 그래프는 기준까지 가득 채운다(캡틴 지시 2026-11-17)
+  var t2 = by.t2, hn = lawyerHyunNow(), ha = hn || t2.items.some(function(it){ return +it.add > 0 && isLawyerHyun(it.n + "|" + (it.rider || "")); });
+  if (hn) { t2.hyNow = 1; t2.now = Math.max(t2.now, t2.a.b); }
+  if (ha) { t2.hyAft = 1; t2.aft = Math.max(t2.aft, t2.a.b); }
   return by;
 }
 function covRadar(p, by){
@@ -677,7 +681,7 @@ function covRadar(p, by){
   var rows = ax.map(function(x){
     var tip = x.items.length ? x.items.map(function(it){ return it.n + " " + won((+it.now || 0) + (+it.add || 0)); }).join(", ") : "가입 없음";
     var lw = x.a.k === "t2" && lawyerOld().length;
-    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + (lw ? ' <span class="lwm">⚠️</span>' : '') + '</td><td>' + (x.now ? curW(x.now) : '-') + '</td><td><b>' + (x.aft ? won(x.aft) : '-') + '</b></td><td class="rb">' + won(x.a.b) + '</td></tr>';
+    return '<tr title="' + esc(tip) + '"><td>' + esc(x.a.n) + (lw ? ' <span class="lwm">⚠️</span>' : '') + '</td><td>' + (x.hyNow ? '변호사 직접' : x.now ? curW(x.now) : '-') + '</td><td><b>' + (x.hyAft ? '변호사 직접' : x.aft ? won(x.aft) : '-') + '</b></td><td class="rb">' + won(x.a.b) + '</td></tr>';
   }).join('');
   var lw = ax.some(function(x){ return x.a.k === "t2"; }) && lawyerOld().length;
   return '<div class="rcard">' + s + '</svg><div><h3>' + esc(p.t) + '</h3><table class="rtb"><tr><th>담보</th><th>현재</th><th>가입 후</th><th>기준</th></tr>' + rows + '</table>' + (lw ? '<div class="lw">' + lawyerWarn() + '</div>' : '') + '</div></div>';
@@ -721,6 +725,13 @@ function careTerm(n){
   return { when: who + " 간호·간병통합서비스 병동에 입원하면 " + (long ? "180일을 넘는 날부터 " : "") + "하루 가입금액" + (long ? " (요양·정신·한방병원 제외)" : ""), note: long ? "181일 이상 입원했을 때 · 1회 입원당 185일까지" : (p.per === "180" ? "1회 입원당 180일까지" : "") };
 }
 // 신골절치료비: 약관 별표39 지급률(2026-10-27 분석,  2_자료/회사자료/신골절치료비_분석.md)
+// 자동차사고변호사선임비용(Ⅲ)(변호사선임현물급부선택가능): 캡틴 캡처 약관(2026-11-17) 기준 — 1사고마다 가입금액 한도로 비용을 주거나 변호사 선임을 현물로 제공
+function isLawyerHyun(n){ var s = String(n).replace(/\s/g, ""); return /변호사/.test(s) && /현물/.test(s); }
+function lawyerHyunNow(){ return ((M.d && M.d.conList) || []).some(function(c){ return c.rows && c.rows.some(function(r){ return isLawyerHyun(r.n + "|" + r.sig); }); }); }
+function lawyerTerm(n){
+  if (!isLawyerHyun(n)) return null;
+  return { when: "운전 중(또는 운전자 비탑승 상태) 급격하고 우연한 자동차사고로 남을 다치게 해 ① 구속되거나 검사가 공소제기(약식기소 제외)한 경우, ② 약식기소 뒤 정식재판이 진행되는 경우 등 약관에서 정한 경우, 1사고마다 가입금액 한도로 변호사 선임비용을 주거나 변호사 선임을 현물로 제공", note: "현물급부를 고르면 회사가 변호사를 직접 선임해 줘요 · 약식기소·불기소·경찰 불송치 경우(③)의 세부 조건은 약관 원문 확인" };
+}
 function fracTerm(n){
   if (!/신골절치료비/.test(n.replace(/\s/g, ""))) return null;
   return { when: "다쳐서 뼈가 부러지면(약관 신골절 분류표) 부러진 곳과 수술 여부에 따라 가입금액의 2%~50% — 예) 손목 수술 18%, 다리 수술 24%, 척추·골반 수술 40%, 손가락 그 외 3%", note: "1사고당 · 같은 사고로 여러 곳이면 합산(같은 부위는 높은 것 하나) · 한 사고 최대 가입금액 · 골다공증으로 인한 골절은 3%" };
@@ -755,6 +766,7 @@ function conExplain(n, sig, kind){
   if (kind === "실손" && /통원|외래|처방|조제/.test(s)) return "외래 진료비·약값으로 실제 낸 돈을 하루 한도까지 돌려받아요 (자기부담금은 빼고)";
   if (/벌금/.test(s)) return "운전하다 사고를 내 받은 벌금을 실제 금액만큼, 가입금액까지";
   if (/처리지원/.test(s)) return "운전하다 사고로 피해자와 형사 합의할 때 합의금을 가입금액까지";
+  if (isLawyerHyun(s)) return "운전하다 사고로 재판 등을 받을 때 변호사 선임비용을 가입금액까지 주거나, 회사가 변호사를 직접 선임해 줘요(현물급부 선택)";
   if (/변호사/.test(s)) return "운전하다 사고로 변호사를 쓸 때 선임 비용을 가입금액까지";
   if (/배상/.test(s)) return "일상생활 중 남에게 피해를 줘 배상해야 할 때 실제 손해를 가입금액까지 (자기부담금 있음)";
   if (/부상치료/.test(s)) return "자동차 사고로 다치면 부상 등급에 따라 정해진 금액";
@@ -1117,7 +1129,7 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : '이 가입금액의 항목별 금액은 약관 지급표로 확인해 주세요.'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(g.name) + '</span>' + payTag(it.n) + '</div>'
@@ -1525,7 +1537,7 @@ function buildFromPdf(ana, prop, who){
       matched++; return;
     }
     var sp = /다빈치로봇암수술비\(특정암\)/.test(nm);
-    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, unv: !sp && !fracTerm(nm) });
+    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, unv: !sp && !fracTerm(nm) && !lawyerTerm(nm) });
   });
   var i130 = byN["130대 질병수술비 (11가지)"], keys130 = Object.keys(s130);
   i130.add = keys130.length ? Math.max.apply(null, keys130.map(function(k){ return s130[k]; })) : 0;
