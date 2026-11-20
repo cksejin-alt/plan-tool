@@ -2229,6 +2229,7 @@ function renderCust(){
 }
 // 움직임: 화면에 들어올 때 떠오르기·숫자 올리기·막대 채우기, 아래 전화 막대, 버튼이 손가락(마우스)을 살짝 따라오기
 function cvMotion(root){
+  var intro = root.querySelector(".intro"); if (intro) setTimeout(function(){ intro.remove(); }, 2000); // 움직임이 멈춘 브라우저에서도 여는 막이 남지 않게
   var hero = root.querySelector(".heroCard");
   setTimeout(function(){ if (hero) { hero.classList.add("in"); [].forEach.call(hero.querySelectorAll("[data-c]"), countUp); } }, 1500);
   if (!("IntersectionObserver" in window)) { [].forEach.call(root.querySelectorAll("[data-r]"), function(el){ el.classList.add("in"); }); return; }
