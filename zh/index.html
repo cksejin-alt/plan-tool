@@ -247,9 +247,10 @@
   /* 중국어판: 보험 용어 옆 한국어 병기 */
   .ko{font-size:.78em;color:#9CA3AF;font-weight:500;margin-left:4px}
   .rcn .ko{display:block;margin:1px 0 0;font-size:12px}
+  .page{line-height:1.22} /* 중국어 글꼴 기본 줄 간격이 한국어보다 커서 요약형 한 쪽이 넘침 → 한국어판과 비슷하게 */
   @media print{
     body{background:#fff} .bar,.nav,.panel,.pbox{display:none!important}
-    .page{margin:0;box-shadow:none;border-radius:0;zoom:.93}
+    .page{margin:0;box-shadow:none;border-radius:0;zoom:.9} /* 중국어판: 인쇄 글꼴이 화면보다 조금 커서 한 쪽이 넘침 → .93에서 .9로 */
     .stage{height:auto;display:block;overflow:visible}
     .slide{position:relative!important;transform:none!important;box-shadow:none;border-radius:0;break-after:page;break-inside:avoid;margin:0 auto;zoom:.88} /* 900×1273 → A4(794×1123) 한 장 */
     .slide:last-child{break-after:auto}
