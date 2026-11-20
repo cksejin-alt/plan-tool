@@ -451,7 +451,92 @@
   @media (max-width:520px){
     .cv .w{padding:0 16px} .cv .who>span:last-child{display:none}
     .cv .bento{grid-template-columns:1fr} .cv .tile.xl,.cv .tile.wide{grid-column:auto} .cv .tile.xl .a{font-size:40px}
-    .cv .btns .pill{width:100%} .cv .two b{font-size:20px} .cv .ja>b{font-size:30px}
+    .cv .btns .pill{width:100%} .cv .two b{font-size:20px} .cv .ja{flex-direction:column;align-items:flex-start;gap:2px} .cv .ja>b{font-size:30px;white-space:nowrap} .cv .ja>span{text-align:left}
+  }
+  /* ===== 2차 꾸밈 (수파노바 리디자인): 여는 막, 심장 박동 선, 3D 기울기, 떠 있는 칩, 쌓이는 카드, 단어 등장, 빛 따라오기, 큰 글씨 띠, 커서 ===== */
+  html.cust{scroll-behavior:smooth} .cv h1,.cv h2{text-wrap:balance}
+  @property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+  .cv .intro{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:#0F1115;color:#fff;animation:cvLift 1.05s var(--ez) .75s forwards;pointer-events:none}
+  .cv .intro .ib{display:flex;align-items:center;gap:14px;font-size:18px;font-weight:600;animation:cvIn .7s var(--ez) both}
+  .cv .intro .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,var(--cr),var(--cr2))}
+  .cv .intro .bar2{position:absolute;left:50%;bottom:22%;width:120px;height:2px;margin-left:-60px;background:rgba(255,255,255,.15);overflow:hidden;border-radius:2px}
+  .cv .intro .bar2 i{display:block;height:100%;background:var(--cr2);transform-origin:0 50%;animation:cvGrow .75s var(--ez) both}
+  @keyframes cvGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes cvLift{to{transform:translateY(-100%);visibility:hidden}}
+  .cv h1 .wd{animation-delay:calc(var(--d) * 70ms + 1050ms)}
+  .cv .hero .ld{animation-delay:calc(var(--t,0s) + .85s)}
+  .cv .heroCard{animation:cvIn 1.1s var(--ez) 1.35s both,cvBob 8s var(--sw) 2.5s infinite}
+  .cv .cnav{animation-delay:1s}
+  /* 심장 박동 선 */
+  .cv .ekg{position:absolute;left:0;right:0;bottom:12%;height:160px;pointer-events:none;opacity:.55}
+  .cv .ekg svg{width:100%;height:100%;overflow:visible}
+  .cv .ekg path{fill:none;stroke:url(#cvE);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2400;stroke-dashoffset:2400;animation:cvDraw 3.2s var(--ez) 1.4s forwards}
+  .cv .ekg circle{fill:var(--cr);filter:drop-shadow(0 0 6px rgba(214,51,76,.8))}
+  @keyframes cvDraw{to{stroke-dashoffset:0}}
+  /* 3D 기울기 + 떠 있는 칩 */
+  .cv .tw{position:relative;perspective:1200px}
+  .cv .tw .tilt{transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;transition:transform .8s var(--ez)}
+  .cv .chip{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:9px 14px 9px 10px;border-radius:999px;font-size:13px;font-weight:600;
+    background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 14px 34px -14px rgba(15,17,21,.28),inset 0 0 0 1px rgba(15,17,21,.06);
+    opacity:0;animation:cvChipIn .9s var(--ez) forwards,cvFloat 7s var(--sw) infinite;animation-delay:calc(1.9s + var(--k) * .18s),calc(2.8s + var(--k) * .9s)}
+  .cv .chip i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--cr),var(--cr2));font-style:normal;font-size:14px}
+  .cv .chip b{color:var(--cr)}
+  .cv .chip.c0{left:-34px;top:-22px} .cv .chip.c1{right:-26px;top:38%} .cv .chip.c2{left:-18px;bottom:-20px}
+  @keyframes cvChipIn{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:none}}
+  /* 스크롤에 따라 배경이 천천히 움직임(지원 브라우저만) */
+  @supports (animation-timeline:scroll()){
+    .cv .hero .o1{animation:cvPar linear both;animation-timeline:scroll(root);animation-range:0 100vh}
+    .cv .hero .o2{animation:cvPar2 linear both;animation-timeline:scroll(root);animation-range:0 100vh}
+    @keyframes cvPar{to{transform:translate3d(0,180px,0) scale(1.15)}}
+    @keyframes cvPar2{to{transform:translate3d(0,-120px,0)}}
+  }
+  /* 둥근 판처럼 떠 있는 색 구역 */
+  .cv .sec.tint{margin:0 10px;border-radius:44px;background:linear-gradient(180deg,#F4F5F7,#FAFAFB);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(15,17,21,.04)}
+  /* 제목 단어 등장 */
+  .cv h2 .wd{display:inline-block;opacity:0;transform:translateY(.5em) rotate(2deg);filter:blur(6px);transition:opacity .9s var(--ez),transform .9s var(--ez),filter .9s var(--ez);transition-delay:calc(var(--d) * 60ms + .1s)}
+  .cv .in h2 .wd,.cv h2.in .wd{opacity:1;transform:none;filter:blur(0)}
+  /* 심장질환 100명 그림 */
+  .cv .waf{display:grid;grid-template-columns:repeat(20,1fr);gap:5px;margin-top:30px;max-width:420px}
+  .cv .waf i{aspect-ratio:1;border-radius:50%;background:#E3E5E9;transform:scale(0);transition:transform .6s var(--ez),background-color .6s var(--ez);transition-delay:calc(var(--i) * 9ms)}
+  .cv .in .waf i{transform:scale(1)} .cv .in .waf i.on{background:var(--cr);transition-delay:calc(var(--i) * 9ms),calc(var(--i) * 9ms + .9s)}
+  .cv .waf+p{font-size:13.5px;color:var(--cs);margin:12px 0 0} .cv .waf+p b{color:var(--cr)}
+  /* 치료 예시: 왼쪽 제목 고정 + 오른쪽 카드가 쌓임 */
+  .cv .jwrap{display:grid;grid-template-columns:.85fr 1.25fr;gap:64px;align-items:start}
+  .cv .jwrap .jhd{position:sticky;top:120px}
+  .cv .jz{display:block;margin-top:0}
+  .cv .jz>.bz{position:sticky;top:calc(96px + var(--k) * 14px);margin-bottom:34px;background:rgba(244,245,247,.9);-webkit-backdrop-filter:none}
+  .cv .jz>.bz.in:nth-child(n){transform:none} .cv .jz>.bz.in:hover{transform:translateY(-4px)}
+  .cv .jz>.bz>.core{box-shadow:0 -14px 40px -26px rgba(15,17,21,.25),0 30px 60px -32px rgba(15,17,21,.22),inset 0 1px 1px rgba(255,255,255,.9)}
+  .cv .jnum{position:absolute;right:22px;top:18px;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;color:var(--cm)}
+  .cv .jz .core{position:relative}
+  /* 빛이 손끝을 따라옴 */
+  .cv .tile,.cv .sr{position:relative;overflow:hidden}
+  .cv .tile:after,.cv .sr:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s var(--ez);background:radial-gradient(260px circle at var(--x,50%) var(--y,50%),rgba(214,51,76,.10),transparent 62%)}
+  .cv .tile:hover:after,.cv .sr:hover:after{opacity:1}
+  .cv .tile.xl{border:1.5px solid transparent;background:linear-gradient(var(--ci),var(--ci)) padding-box,conic-gradient(from var(--ang),rgba(255,255,255,.08) 0 62%,var(--cr2) 75%,rgba(255,255,255,.08) 88%) border-box;animation:cvAng 6s linear infinite}
+  .cv .tile.xl:after{background:radial-gradient(300px circle at var(--x,50%) var(--y,50%),rgba(255,255,255,.10),transparent 62%)}
+  @keyframes cvAng{to{--ang:360deg}}
+  /* 상담 위 큰 글씨 띠 */
+  .cv .bigmq{overflow:hidden;margin:0 0 56px;pointer-events:none}
+  .cv .bigmq div{display:flex;width:max-content;animation:cvMq 38s linear infinite}
+  .cv .bigmq span{font-family:Outfit,"Pretendard Variable",Pretendard,sans-serif;font-size:clamp(56px,10vw,132px);font-weight:800;letter-spacing:-.04em;line-height:1.05;white-space:nowrap;padding-right:.5em;color:transparent;-webkit-text-stroke:1.5px rgba(214,51,76,.35)}
+  .cv .bigmq span:nth-child(2n){color:rgba(214,51,76,.9);-webkit-text-stroke:0}
+  /* 부드러운 커서 (마우스가 있는 PC만) */
+  .cv .cvc1,.cv .cvc2{position:fixed;left:0;top:0;z-index:65;pointer-events:none;border-radius:50%;display:none}
+  .cv .cvc1{width:8px;height:8px;margin:-4px 0 0 -4px;background:var(--cr)}
+  .cv .cvc2{width:38px;height:38px;margin:-19px 0 0 -19px;box-shadow:inset 0 0 0 1.5px rgba(214,51,76,.45);transition:width .4s var(--ez),height .4s var(--ez),margin .4s var(--ez),background-color .4s var(--ez)}
+  .cv .cvc2.big{width:64px;height:64px;margin:-32px 0 0 -32px;background:rgba(214,51,76,.08)}
+  @media (pointer:fine){ .cv .cvc1,.cv .cvc2{display:block} }
+  @media (max-width:880px){
+    .cv .jwrap{grid-template-columns:1fr;gap:36px} .cv .jwrap .jhd{position:static}
+    .cv .jz>.bz{top:calc(78px + var(--k) * 10px)}
+    .cv .sec.tint{margin:0 6px;border-radius:30px}
+    .cv .chip{font-size:12px;padding:7px 12px 7px 8px} .cv .chip i{width:22px;height:22px;font-size:12px}
+    .cv .chip.c0{left:-4px;top:-26px} .cv .chip.c1{right:-4px;top:auto;bottom:-22px} .cv .chip.c2{display:none}
+    .cv .ekg{bottom:auto;top:58%;height:110px;opacity:.35}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .cv .intro{display:none} .cv h2 .wd,.cv .chip,.cv .waf i{opacity:1!important;transform:none!important;filter:none!important} .cv .ekg path{stroke-dashoffset:0} .cv .cvc1,.cv .cvc2{display:none!important}
   }
   @media (prefers-reduced-motion:reduce){
     .cv *,.cv *:before,.cv *:after{animation:none!important;transition:none!important}
@@ -1975,6 +2060,8 @@ function cvAssets(){
   var l = document.createElement("link"); l.id = "cvAssets"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap"; document.head.appendChild(l);
   var l2 = document.createElement("link"); l2.rel = "stylesheet"; l2.href = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"; document.head.appendChild(l2);
   var s = document.createElement("script"); s.src = "https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"; document.head.appendChild(s);
+  var fv = document.createElement("link"); fv.rel = "icon"; fv.href = "data:image/svg+xml," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='10' fill='%23D6334C'/><path d='M6 17h5l2-5 4 10 2-5h7' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>").replace("%2523", "%23"); document.head.appendChild(fv);
+  var md = document.createElement("meta"); md.name = "description"; md.content = "담당 컨설턴트가 정리한 보장 제안 요약이에요."; document.head.appendChild(md);
 }
 function ico(n){ return '<iconify-icon icon="solar:' + n + '" aria-hidden="true"></iconify-icon>'; }
 var SV_CALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>';
@@ -2025,7 +2112,8 @@ function renderCust(){
   var d = M.d, who = d.customer ? esc(d.customer) + ' 고객님' : '고객님', top = M.top[0], ph = d.phone || '', tel = telNum(ph), np = !!d.noProp;
   document.title = (d.customer ? d.customer + ' 고객님 ' : '') + '보장 제안';
   var words = function(html){ var k = 0; return html.split('<br>').map(function(line){ return line.split(/(<[^>]+>[^<]*<\/[^>]+>|\s+)/).filter(function(s){ return s && !/^\s+$/.test(s); }).map(function(s){ var m = s.match(/^<(\w+) class="(\w+)">(.*)<\/\w+>$/); return m ? '<span class="wd ' + m[2] + '" style="--d:' + (k++) + '">' + m[3] + '</span>' : '<span class="wd" style="--d:' + (k++) + '">' + s + '</span>'; }).join(' '); }).join('<br>'); };
-  var h = '<div class="cv"><div class="grain"></div><div class="prog"></div>';
+  var h = '<div class="cv"><div class="grain"></div><div class="prog"></div><div class="cvc1"></div><div class="cvc2"></div>'
+     + '<div class="intro" aria-hidden="true"><div class="ib"><span class="av">' + esc((d.agent || '담').slice(0, 1)) + '</span><span>' + who + ' 보장 제안</span></div><div class="bar2"><i></i></div></div>';
   h += '<header class="cnav"><div class="who"><span class="av">' + esc((d.agent || '담').slice(0, 1)) + '</span><b>' + esc(d.agent || '담당') + ' 컨설턴트</b><span>' + esc(d.branch || '') + '</span></div>'
      + (tel ? '<a class="pill dark sm mag" href="tel:' + tel + '">전화하기<span class="ic">' + SV_CALL + '</span></a>' : '') + '</header>';
   // 첫 화면
@@ -2034,27 +2122,37 @@ function renderCust(){
   var lead = np ? '지금 가진 보험 ' + d.contracts + '건을 하나씩 봤어요. 병에 걸리거나 다쳤을 때 얼마를 받는지 아래에서 확인해 보세요.'
     : d.noAna ? '이번에 제안하는 보험으로 병마다 얼마를 받는지 정리했어요. 지금 가진 보험은 상담 때 함께 맞춰 볼게요.'
     : '지금 가진 보험 ' + d.contracts + '건을 하나씩 봤어요. 비어 있는 보장을 채우는 안이에요. 병마다 얼마를 받는지 아래에서 확인해 보세요.';
-  h += '<section class="hero" id="cvHero"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="w"><div>'
+  // 심장 박동 선: 평평하다가 두 번 크게 뛰는 모양
+  var ekg = 'M0 80 L240 80 L262 80 L272 60 L282 80 L300 80 L312 20 L326 140 L340 80 L380 80 L396 68 L410 80 L700 80 L722 80 L732 62 L742 80 L760 80 L772 8 L788 150 L802 80 L842 80 L858 66 L872 80 L1200 80';
+  h += '<section class="hero" id="cvHero"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>'
+     + '<div class="ekg" aria-hidden="true"><svg viewBox="0 0 1200 160" preserveAspectRatio="none"><defs><linearGradient id="cvE" x1="0" x2="1"><stop offset="0" stop-color="#D6334C" stop-opacity="0"/><stop offset=".35" stop-color="#D6334C" stop-opacity=".7"/><stop offset="1" stop-color="#F2708A"/></linearGradient></defs>'
+     + '<path id="cvEkgP" d="' + ekg + '"/><circle r="5"><animateMotion dur="6s" begin="3s" repeatCount="indefinite" calcMode="linear"><mpath href="#cvEkgP"/></animateMotion></circle></svg></div><div class="w"><div>'
      + '<span class="eyebrow ld" style="--t:.1s"><i></i>' + who + ' 보장 제안 · <span class="n">' + esc(d.date || '') + '</span></span>'
      + '<h1>' + words(head) + '</h1>'
      + '<p class="lead ld" style="--t:.9s">' + lead + '</p>'
      + '<div class="btns ld" style="--t:1.1s"><a class="pill red mag" href="#cvJs">병마다 받는 돈 보기<span class="ic">' + SV_DOWN + '</span></a>' + (tel ? '<a class="pill ghost mag" href="#cvCall">10분 통화로 듣기<span class="ic">' + SV_RIGHT + '</span></a>' : '') + '</div></div>';
   var mx0 = top ? Math.max(top.aft, top.now, 1) : 1;
-  h += '<div class="bz heroCard"><div class="core"><div class="ct"><span class="tag">' + ico("shield-check-bold-duotone") + '한눈에 보기</span><span>' + (d.age ? d.age + '세 · ' + esc(d.sex) : '') + '</span></div><div class="two">'
+  // 떠 있는 칩: 이번에 더하는 큰 담보 3개 (없으면 지금 보장)
+  var chipSrc = (np ? M.all.filter(function(it){ return +it.now > 0; }) : M.grown).slice().sort(function(a, b){ return (+b.add || +b.now) - (+a.add || +a.now); }).slice(0, 3);
+  h += '<div class="tw" id="cvTw">' + chipSrc.map(function(it, k){ return '<span class="chip c' + k + '" style="--k:' + k + '"><i>+</i>' + esc(it.n.replace(/\s*\(.*?\)\s*/g, ' ').trim()) + ' <b class="n">' + won(np ? it.now : it.add) + '</b></span>'; }).join('')
+     + '<div class="tilt"><div class="bz heroCard"><div class="core"><div class="ct"><span class="tag">' + ico("shield-check-bold-duotone") + '한눈에 보기</span><span>' + (d.age ? d.age + '세 · ' + esc(d.sex) : '') + '</span></div><div class="two">'
      + '<div><p>지금 월 보험료' + (d.contracts ? ' (' + d.contracts + '건)' : '') + '</p><b class="n">' + (d.noAna ? '확인 전' : cnt(d.premiumNow, 'full')) + '</b></div>'
      + (np ? '<div><p>지금 보장 담보</p><b class="n">' + M.all.filter(function(it){ return +it.now > 0; }).length + '가지</b></div>' : '<div><p>이번 제안 월 보험료</p><b class="n">' + cnt(d.premiumAdd, 'full', '+') + '</b></div>') + '</div>';
   if (top && !np) h += '<div class="bigr"><p>' + esc(noEmo(top.j.short || top.j.title)) + '로 치료받으면 더 받는 돈</p><b class="n">' + cnt(top.aft - top.now, 'won', '+') + '</b><small>' + esc(top.j.case) + ' 예시</small></div>'
      + '<div class="cmp"><div><span>지금</span><div class="trk"><i class="fill" style="--v:' + (d.noAna ? 0 : top.now / mx0).toFixed(3) + '"></i></div><em class="n">' + curW(top.now) + '</em></div>'
      + '<div><span>제안 후</span><div class="trk"><i class="fill red" style="--v:' + (top.aft / mx0).toFixed(3) + '"></i></div><em class="n" style="color:var(--cr)">' + won(top.aft) + '</em></div></div>';
   if (!np) h += '<p class="csum">월 <b class="n">' + wonFull(d.premiumAdd) + '</b>을 더 내고, 보장 <b>' + M.grown.length + '가지</b>를 더해요.</p>';
-  h += '</div></div></div></section>';
+  h += '</div></div></div></div></div></section>';
   // 흐르는 담보 띠
   var mq = (np ? M.all.filter(function(it){ return +it.now > 0; }) : M.grown).slice().sort(function(a, b){ return ((+b.add || +b.now) - (+a.add || +a.now)); }).slice(0, 14);
   if (mq.length > 3) { var mqs = mq.map(function(it){ return '<span>' + ico("check-circle-bold-duotone") + esc(it.n) + ' <b class="n">' + won(np ? it.now : it.add) + '</b></span>'; }).join('');
     h += '<div class="mq" aria-label="' + (np ? '지금 보장' : '이번에 더하는 보장') + '"><div class="tr">' + mqs + mqs + '</div></div>'; }
   // 숫자로 보는 뇌·심장
   var H = SHARE.heart, B = SHARE.brain, hAmi = H.parts[0].v, bStr = B.parts[0].v + B.parts[1].v;
-  h += '<section class="sec"><div class="w stats"><div data-r><span class="eyebrow"><i></i>숫자로 보면</span><h2>진단비만으로는<br><span class="mut">받을 수 없는 병이</span><br>많아요</h2></div>'
+  var ami100 = Math.round(hAmi / H.total * 100), waf = '';
+  for (var wi = 0; wi < 100; wi++) waf += '<i style="--i:' + wi + '"' + (wi < ami100 ? ' class="on"' : '') + '></i>';
+  h += '<section class="sec"><div class="w stats"><div data-r><span class="eyebrow"><i></i>숫자로 보면</span><h2>진단비만으로는<br><span class="mut">받을 수 없는 병이</span><br>많아요</h2>'
+     + '<div class="waf" aria-hidden="true">' + waf + '</div><p>심장질환으로 병원에 간 100명 중 급성심근경색은 <b class="n">약 ' + ami100 + '명</b>이에요.</p></div>'
      + '<div data-r style="--i:1"><div class="sg">'
      + '<div><b class="n">' + cnt(Math.round(H.total / 10000), 'int') + '만 명</b><span>2024년 심장질환으로 병원에 간 사람</span></div>'
      + '<div><b class="n" style="color:var(--cr)">' + cnt(+(hAmi / H.total * 100).toFixed(1), 'pct') + '</b><span>그중 급성심근경색 진단비로 받을 수 있는 비율</span></div>'
@@ -2063,18 +2161,18 @@ function renderCust(){
      + '</div><p class="src">출처: ' + esc(SHARE.src) + '</p></div></div></section>';
   // 치료 예시
   var jmx = Math.max.apply(null, M.js.map(function(x){ return Math.max(x.aft, x.now); }).concat(1));
-  h += '<section class="sec tint" id="cvJs"><div class="w"><div data-r><span class="eyebrow"><i></i>치료 예시</span><h2>이렇게 치료받으면,<br><span class="mut">이만큼</span> 받아요</h2>'
-     + '<p class="desc">큰 병원에서 첫해에 치료받는 경우예요. 함께 나오는 담보를 모두 더한 예시 금액이고, 가입 1년 이후 기준이에요.</p></div><div class="jz">';
+  h += '<section class="sec tint" id="cvJs"><div class="w jwrap"><div class="jhd" data-r><span class="eyebrow"><i></i>치료 예시</span><h2>이렇게 치료받으면,<br><span class="mut">이만큼</span> 받아요</h2>'
+     + '<p class="desc">큰 병원에서 첫해에 치료받는 경우예요. 함께 나오는 담보를 모두 더한 예시 금액이고, 가입 1년 이후 기준이에요. 아래로 내리면 카드가 한 장씩 쌓여요.</p></div><div class="jz">';
   M.js.forEach(function(x, k){
     var a = np ? x.now : x.aft;
-    h += '<div class="bz" data-r style="--i:' + (k % 2) + '"><div class="core"><div class="jh"><span class="ji">' + ico(JICO(x.j.title)) + '</span><div><h3>' + esc(noEmo(x.j.title)) + '</h3><small>' + esc(x.j.case) + '</small></div></div>'
+    h += '<div class="bz" data-r style="--k:' + k + '"><div class="core"><span class="jnum">' + (k < 9 ? '0' : '') + (k + 1) + ' / ' + (M.js.length < 10 ? '0' : '') + M.js.length + '</span><div class="jh"><span class="ji">' + ico(JICO(x.j.title)) + '</span><div><h3>' + esc(noEmo(x.j.title)) + '</h3><small>' + esc(x.j.case) + '</small></div></div>'
        + '<div class="ja"><b class="n">' + cnt(a, 'won') + '</b>' + (!np && x.aft > x.now ? '<span>지금보다 <b class="n" style="color:var(--ci)">+' + won(x.aft - x.now) + '</b></span>' : '') + '</div>'
        + '<div class="jbr">' + (np ? '' : '<div><span>지금</span><div class="trk"><i class="fill" style="--v:' + (d.noAna ? 0 : x.now / jmx).toFixed(3) + '"></i></div><em class="n">' + curW(x.now) + '</em></div>')
        + '<div><span>' + (np ? '지금' : '제안 후') + '</span><div class="trk"><i class="fill red" style="--v:' + (a / jmx).toFixed(3) + '"></i></div><em class="n" style="color:var(--cr)">' + won(a) + '</em></div></div>'
        + '<details class="jst"><summary>단계별로 보기<span class="ic">' + SV_DOWN + '</span></summary><ul class="stp">'
        + x.steps.map(function(st, si){ return '<li style="--i:' + si + '"><span>' + esc(st.s.t) + '</span><b class="n">' + won(np ? st.rows.reduce(function(s, r){ return s + r.now; }, 0) : st.sum) + '</b></li>'; }).join('') + '</ul></details></div></div>';
   });
-  h += '</div><p class="fine" data-r>' + (d.cut && !np ? "'지금'은 정리하기로 한 보험을 뺀 나머지 보험 기준이에요. " : '') + '"큰 병원"은 상급종합병원(암은 암중점치료기관 포함)이에요. 통합치료비는 한 해 한도(가입금액)까지만 나와요.</p></div></section>';
+  h += '<p class="fine" data-r>' + (d.cut && !np ? "'지금'은 정리하기로 한 보험을 뺀 나머지 보험 기준이에요. " : '') + '"큰 병원"은 상급종합병원(암은 암중점치료기관 포함)이에요. 통합치료비는 한 해 한도(가입금액)까지만 나와요.</p></div></div></section>';
   // 수술 예시
   var sr = surgRows().filter(function(r){ return r.tot > 0; }), smx = Math.max.apply(null, sr.map(function(r){ return r.tot; }).concat(1));
   if (sr.length) {
@@ -2116,7 +2214,8 @@ function renderCust(){
      + '<li>' + ico("hospital-bold-duotone") + '<span>실손보험은 실제 낸 병원비를 돌려받는 보험이고, 이번 담보들은 정해진 금액을 받아 생활비나 간병비로도 쓸 수 있어요.</span></li>'
      + '<li>' + ico("calendar-bold-duotone") + '<span>가입 전 가입설계서, 상품설명서, 약관을 꼭 확인해 주세요.</span></li></ul></div></div></div></section>';
   // 전화 유도
-  h += '<section class="cta" id="cvCall"><div class="glow"></div><div class="w"><div data-r><span class="eyebrow"><i></i>상담</span><h2>궁금한 건<br><span class="mut">통화 10분이면</span> 돼요</h2>'
+  var bw = '<span>보장 제안</span><span>10분 상담</span><span>' + esc(d.agent || '') + ' 컨설턴트</span><span>궁금하면 전화 주세요</span>';
+  h += '<section class="cta" id="cvCall"><div class="glow"></div><div class="bigmq" aria-hidden="true"><div>' + bw + bw + '</div></div><div class="w"><div data-r><span class="eyebrow"><i></i>상담</span><h2>궁금한 건<br><span class="mut">통화 10분이면</span> 돼요</h2>'
      + '<p class="desc">보험료가 부담되거나 빼고 싶은 담보가 있으면 말씀해 주세요. 거기에 맞춰 다시 짜 드릴게요.</p></div><div class="btns" data-r style="--i:1">'
      + (tel ? '<a class="pill red mag" href="tel:' + tel + '"><span><span class="n">' + esc(ph) + '</span> 전화하기</span><span class="ic">' + SV_CALL + '</span></a><a class="pill ghost mag" href="sms:' + tel + '">문자 보내기<span class="ic">' + SV_MSG + '</span></a>' : '')
      + '<a class="pill ghost mag" href="#cvJs">제안 다시 보기<span class="ic">' + SV_RIGHT + '</span></a></div></div></section>';
@@ -2124,13 +2223,14 @@ function renderCust(){
      + '<p class="d">금액은 예시이며 실제 지급은 약관과 심사 기준을 따릅니다. 가입 전 가입설계서, 상품설명서, 약관을 꼭 확인하세요.</p></div></footer>';
   if (tel) h += '<div class="dock" id="cvDock"><span>궁금한 건 바로 물어보세요</span><a class="pill red sm" href="tel:' + tel + '">전화하기<span class="ic">' + SV_CALL + '</span></a></div>';
   h += '</div>';
+  h = h.replace(/<h2>([\s\S]*?)<\/h2>/g, function(m, c){ return '<h2>' + words(c) + '</h2>'; }); // 제목은 단어마다 차례로 나타남
   var root = document.getElementById("vCust"); root.innerHTML = h;
   cvMotion(root);
 }
 // 움직임: 화면에 들어올 때 떠오르기·숫자 올리기·막대 채우기, 아래 전화 막대, 버튼이 손가락(마우스)을 살짝 따라오기
 function cvMotion(root){
   var hero = root.querySelector(".heroCard");
-  setTimeout(function(){ if (hero) { hero.classList.add("in"); [].forEach.call(hero.querySelectorAll("[data-c]"), countUp); } }, 900);
+  setTimeout(function(){ if (hero) { hero.classList.add("in"); [].forEach.call(hero.querySelectorAll("[data-c]"), countUp); } }, 1500);
   if (!("IntersectionObserver" in window)) { [].forEach.call(root.querySelectorAll("[data-r]"), function(el){ el.classList.add("in"); }); return; }
   var io = new IntersectionObserver(function(es){ es.forEach(function(e){
     if (!e.isIntersecting) return; var el = e.target; el.classList.add("in"); io.unobserve(el);
@@ -2145,6 +2245,22 @@ function cvMotion(root){
     b.addEventListener("pointermove", function(e){ var r = b.getBoundingClientRect(); b.style.setProperty("--mx", ((e.clientX - r.left - r.width / 2) * .12).toFixed(1) + "px"); b.style.setProperty("--my", ((e.clientY - r.top - r.height / 2) * .22).toFixed(1) + "px"); });
     b.addEventListener("pointerleave", function(){ b.style.setProperty("--mx", "0px"); b.style.setProperty("--my", "0px"); });
   });
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  // 카드 위 빛이 손끝을 따라옴
+  [].forEach.call(root.querySelectorAll(".tile,.sr"), function(el){ el.addEventListener("pointermove", function(e){ var r = el.getBoundingClientRect(); el.style.setProperty("--x", (e.clientX - r.left) + "px"); el.style.setProperty("--y", (e.clientY - r.top) + "px"); }); });
+  if (!matchMedia("(pointer: fine)").matches) return;
+  // 첫 화면 카드 3D 기울기 + 칩이 반대로 살짝 움직임
+  var tw = root.querySelector("#cvTw"), tilt = tw && tw.querySelector(".tilt"), hero = root.querySelector("#cvHero");
+  if (tilt) {
+    hero.addEventListener("pointermove", function(e){ var r = tw.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      tilt.style.setProperty("--ry", (x * 10).toFixed(2) + "deg"); tilt.style.setProperty("--rx", (-y * 8).toFixed(2) + "deg");
+      [].forEach.call(tw.querySelectorAll(".chip"), function(c, k){ c.style.translate = (-x * (14 + k * 8)).toFixed(1) + "px " + (-y * (12 + k * 6)).toFixed(1) + "px"; }); });
+    hero.addEventListener("pointerleave", function(){ tilt.style.setProperty("--ry", "0deg"); tilt.style.setProperty("--rx", "0deg"); [].forEach.call(tw.querySelectorAll(".chip"), function(c){ c.style.translate = "0 0"; }); });
+  }
+  // 부드럽게 따라오는 커서
+  var c1 = root.querySelector(".cvc1"), c2 = root.querySelector(".cvc2"), mx = -100, my = -100, fx = -100, fy = -100;
+  document.addEventListener("pointermove", function(e){ mx = e.clientX; my = e.clientY; c1.style.transform = "translate(" + mx + "px," + my + "px)"; c2.classList.toggle("big", !!(e.target.closest && e.target.closest("a,summary,button"))); });
+  (function loop(){ fx += (mx - fx) * .16; fy += (my - fy) * .16; c2.style.transform = "translate(" + fx.toFixed(1) + "px," + fy.toFixed(1) + "px)"; requestAnimationFrame(loop); })();
 }
 // 링크 만들기 창
 var LINK = "";
