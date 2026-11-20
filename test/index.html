@@ -2289,7 +2289,7 @@ document.getElementById("lMake").onclick = async function(){
   try { localStorage.setItem("planAgentPhone", ph); } catch (e) {}
   var d = slimData(document.getElementById("lName").checked); d.phone = ph; d.agent = ag;
   var packed = await packData(d), shortOk = false;
-  if (SHORT_BASE) { lSay("짧은 링크 만드는 중…"); try { LINK = await shortLink(packed); shortOk = true; } catch (e) { lSay("짧은 링크 서버에 연결하지 못해 긴 링크로 만들었어요.", true); } }
+  if (SHORT_BASE) { lSay("짧은 링크 만드는 중…"); try { LINK = await shortLink(packed, ag); shortOk = true; } catch (e) { lSay("짧은 링크 서버에 연결하지 못해 긴 링크로 만들었어요.", true); } }
   if (!shortOk) LINK = location.href.split(/[?#]/)[0] + "#c=" + packed;
   var who = d.customer ? d.customer + " 고객님" : "고객님";
   document.getElementById("lMsg").value = who + ", 안녕하세요. " + (ag ? ag + " 컨설턴트예요. " : "") + "말씀드린 보장 제안을 휴대폰으로 보기 쉽게 정리했어요. 아래 링크를 눌러 보시고, 궁금한 점은 편하게 전화 주세요.";
@@ -2297,12 +2297,12 @@ document.getElementById("lMake").onclick = async function(){
   document.getElementById("lOut").hidden = false; if (shortOk || !SHORT_BASE) lSay("✅ 링크를 만들었어요. 미리 보기로 확인한 뒤 보내 주세요." + (shortOk ? " (90일 뒤 저절로 꺼져요)" : ""));
 };
 // 짧은 링크: 휴대폰 안에서 암호(AES-GCM)로 잠가 서버에 올리고, 열쇠는 링크 # 뒤에만 둔다. 서버는 내용을 볼 수 없다.
-async function shortLink(packed){
+async function shortLink(packed, agent){
   var key = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
   var k = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
   var ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, new TextEncoder().encode(packed)));
   var all = new Uint8Array(iv.length + ct.length); all.set(iv); all.set(ct, iv.length);
-  var r = await fetch(SHORT_BASE + "/s", { method: "POST", headers: { "Content-Type": "text/plain" }, body: b64u(all) });
+  var r = await fetch(SHORT_BASE + "/s" + (agent ? "?a=" + encodeURIComponent(agent) : ""), { method: "POST", headers: { "Content-Type": "text/plain" }, body: b64u(all) });
   if (!r.ok) throw new Error("save " + r.status);
   return SHORT_BASE + "/" + (await r.json()).id + "#" + b64u(key);
 }
