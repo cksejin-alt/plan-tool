@@ -613,7 +613,7 @@
 <script>
 // 고객이 받은 링크(#c=...)로 열면 고객 화면만 보여 준다
 // 짧은 링크 서버 (결재 #067). 비어 있으면 긴 링크(#c=)만 만든다.
-var SHORT_BASE = "https://go.poo-85.workers.dev";
+var SHORT_BASE = "https://go.bojang-plan.workers.dev";
 var SHORT_ID = (location.search.match(/[?&]s=([A-Za-z0-9]{5,12})/) || [])[1] || "";
 var CUST = /^#c=/.test(location.hash) || !!(SHORT_ID && location.hash.length > 1);
 if (CUST) document.documentElement.classList.add("cust");
