@@ -612,7 +612,10 @@
 
 <script>
 // 고객이 받은 링크(#c=...)로 열면 고객 화면만 보여 준다
-var CUST = /^#c=/.test(location.hash);
+// 짧은 링크 서버 (결재 #067). 비어 있으면 긴 링크(#c=)만 만든다.
+var SHORT_BASE = "https://go.poo-85.workers.dev";
+var SHORT_ID = (location.search.match(/[?&]s=([A-Za-z0-9]{5,12})/) || [])[1] || "";
+var CUST = /^#c=/.test(location.hash) || !!(SHORT_ID && location.hash.length > 1);
 if (CUST) document.documentElement.classList.add("cust");
 // 가상 고객 예시 데이터 (금액 단위: 만원). 실제 고객 정보는 이 파일에 저장하지 말고, 화면에서만 고쳐 인쇄하세요.
 var DATA = {
@@ -2285,19 +2288,38 @@ document.getElementById("lMake").onclick = async function(){
   if (telNum(ph).length < 9) return lSay("고객이 전화할 번호를 넣어 주세요.", true);
   try { localStorage.setItem("planAgentPhone", ph); } catch (e) {}
   var d = slimData(document.getElementById("lName").checked); d.phone = ph; d.agent = ag;
-  LINK = location.href.split("#")[0] + "#c=" + await packData(d);
+  var packed = await packData(d), shortOk = false;
+  if (SHORT_BASE) { lSay("짧은 링크 만드는 중…"); try { LINK = await shortLink(packed); shortOk = true; } catch (e) { lSay("짧은 링크 서버에 연결하지 못해 긴 링크로 만들었어요.", true); } }
+  if (!shortOk) LINK = location.href.split(/[?#]/)[0] + "#c=" + packed;
   var who = d.customer ? d.customer + " 고객님" : "고객님";
   document.getElementById("lMsg").value = who + ", 안녕하세요. " + (ag ? ag + " 컨설턴트예요. " : "") + "말씀드린 보장 제안을 휴대폰으로 보기 쉽게 정리했어요. 아래 링크를 눌러 보시고, 궁금한 점은 편하게 전화 주세요.";
   document.getElementById("lLen").textContent = "링크 길이 " + LINK.length.toLocaleString("ko-KR") + "자" + (LINK.length > 8000 ? " · 길어서 문자(SMS)로는 잘릴 수 있어요. 카톡으로 보내 주세요." : "");
-  document.getElementById("lOut").hidden = false; lSay("✅ 링크를 만들었어요. 미리 보기로 확인한 뒤 보내 주세요.");
+  document.getElementById("lOut").hidden = false; if (shortOk || !SHORT_BASE) lSay("✅ 링크를 만들었어요. 미리 보기로 확인한 뒤 보내 주세요." + (shortOk ? " (90일 뒤 저절로 꺼져요)" : ""));
 };
+// 짧은 링크: 휴대폰 안에서 암호(AES-GCM)로 잠가 서버에 올리고, 열쇠는 링크 # 뒤에만 둔다. 서버는 내용을 볼 수 없다.
+async function shortLink(packed){
+  var key = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  var k = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
+  var ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, new TextEncoder().encode(packed)));
+  var all = new Uint8Array(iv.length + ct.length); all.set(iv); all.set(ct, iv.length);
+  var r = await fetch(SHORT_BASE + "/s", { method: "POST", headers: { "Content-Type": "text/plain" }, body: b64u(all) });
+  if (!r.ok) throw new Error("save " + r.status);
+  return SHORT_BASE + "/" + (await r.json()).id + "#" + b64u(key);
+}
+async function openShort(id, keyTxt){
+  var r = await fetch(SHORT_BASE + "/d/" + id, { cache: "no-store" });
+  if (!r.ok) throw new Error(r.status === 404 ? "gone" : "net");
+  var all = unb64u(await r.text()), k = await crypto.subtle.importKey("raw", unb64u(keyTxt), "AES-GCM", false, ["decrypt"]);
+  var pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: all.subarray(0, 12) }, k, all.subarray(12));
+  return unpackData(new TextDecoder().decode(pt));
+}
 document.getElementById("lCopy").onclick = async function(){ lSay(await copyText(LINK) ? "✅ 링크를 복사했어요." : "복사가 안 됐어요. 다시 눌러 주세요.", false); };
 document.getElementById("lCopyMsg").onclick = async function(){ lSay(await copyText(lFull()) ? "✅ 글과 링크를 복사했어요. 카톡에 붙여 넣으세요." : "복사가 안 됐어요. 다시 눌러 주세요.", false); };
 document.getElementById("lOpen").onclick = function(){ window.open(LINK, "_blank", "noopener"); };
 document.getElementById("lShare").onclick = function(){ navigator.share({ title: "보장 제안", text: document.getElementById("lMsg").value.trim(), url: LINK }).catch(function(){}); };
 if (CUST) (async function(){
-  try { DATA = await unpackData(location.hash.slice(3)); renderCust(); window.scrollTo(0, 0); }
-  catch (e) { document.getElementById("vCust").innerHTML = '<div class="cv"><div class="err"><h2>제안서를 열지 못했어요</h2><p>링크가 중간에 잘렸거나 휴대폰 브라우저가 오래됐을 수 있어요. 받은 링크 전체를 다시 눌러 보시거나, 담당 컨설턴트에게 연락해 주세요.</p></div></div>'; }
+  try { DATA = /^#c=/.test(location.hash) ? await unpackData(location.hash.slice(3)) : await openShort(SHORT_ID, location.hash.slice(1)); renderCust(); window.scrollTo(0, 0); }
+  catch (e) { document.getElementById("vCust").innerHTML = '<div class="cv"><div class="err"><h2>제안서를 열지 못했어요</h2><p>' + (e && e.message === "gone" ? '링크 보관 기간(90일)이 지났어요. 담당 컨설턴트에게 새 링크를 요청해 주세요.' : '링크가 중간에 잘렸거나 휴대폰 브라우저가 오래됐을 수 있어요. 받은 링크 전체를 다시 눌러 보시거나, 담당 컨설턴트에게 연락해 주세요.') + '</p></div></div>'; }
 })();
 renderAll(); buildForm(); pdfBox(true);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ renderAll(); }); // 글꼴을 다 불러온 뒤 높이를 다시 재서 빈 곳 채우기
