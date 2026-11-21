@@ -257,7 +257,7 @@
 
   /* 고객용 링크 만들기 창 */
   .lk label.t{display:block;font-size:12px;font-weight:700;color:var(--sub);margin:10px 0 4px}
-  .lk input[type=text],.lk input[type=tel],.lk textarea{width:100%;padding:9px 10px;border:1px solid #D1D5DB;border-radius:9px;font:500 14px Pretendard,sans-serif}
+  .lk input[type=text],.lk input[type=tel],.lk input[type=url],.lk textarea{width:100%;padding:9px 10px;border:1px solid #D1D5DB;border-radius:9px;font:500 14px Pretendard,sans-serif}
   .lk textarea{height:92px;resize:vertical;font-size:13px;line-height:1.5}
   .lk .ck{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px;cursor:pointer}
   .lk .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
@@ -682,6 +682,13 @@
     <div class="len" id="lLen"></div>
     <div class="row"><button class="pri" id="lCopyMsg">글+링크 복사</button><button id="lCopy">링크만 복사</button></div>
     <div class="row"><button id="lOpen">고객 화면 미리 보기</button><button id="lShare">휴대폰으로 공유</button></div>
+    <button class="one" id="lKs" style="background:#FEE500;color:#191919">💬 카톡으로 보내기 (친구 골라서 보내기)</button>
+    <div id="lKsSet" hidden style="margin-top:8px;border:1px dashed #D9DBE0;border-radius:10px;padding:10px 12px;font-size:12.5px">
+      <b>카카오 JavaScript 키를 한 번만 넣어 주세요</b>
+      <small style="display:block;color:var(--sub);margin:3px 0 6px">카카오 개발자 사이트(developers.kakao.com) → 내 애플리케이션 → 앱 키의 'JavaScript 키'. 이 컴퓨터(브라우저)에만 저장되고, 사이트·파일에는 저장하지 않아요.</small>
+      <div class="row" style="margin:0"><input type="text" id="lKsKey" autocomplete="off" placeholder="JavaScript 키 붙여 넣기" style="flex:1;min-width:0"><button id="lKsSave">저장하고 보내기</button></div>
+      <button type="button" id="lKsDel" style="margin-top:6px;border:0;background:none;color:var(--sub);font-size:11.5px;cursor:pointer;padding:0">저장한 키 지우기</button>
+    </div>
   </div>
   <div class="msg" id="lMsgOk" role="status"></div>
 </div></div>
@@ -2602,6 +2609,32 @@ document.getElementById("lCopy").onclick = async function(){ lSay(await copyText
 document.getElementById("lCopyMsg").onclick = async function(){ lSay(await copyText(lFull()) ? "✅ 글과 링크를 복사했어요. 카톡에 붙여 넣으세요." : "복사가 안 됐어요. 다시 눌러 주세요.", false); };
 document.getElementById("lOpen").onclick = function(){ window.open(LINK, "_blank", "noopener"); };
 document.getElementById("lShare").onclick = function(){ navigator.share({ title: "보장 제안", text: document.getElementById("lMsg").value.trim(), url: LINK }).catch(function(){}); };
+// 카톡 공유: 카카오 SDK로 카톡을 열고 제안서 카드를 채워 둔다. 받을 친구 고르기와 보내기는 설계사가 직접.
+// JavaScript 키는 설계사 브라우저(localStorage)에만 둔다(파일·사이트에 넣지 않음). 카카오 앱에 사이트 도메인 2개 등록 필요.
+var KAKAO_SDK = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
+function ksKey(){ try { return localStorage.getItem("planKakaoKey") || ""; } catch (e) { return ""; } }
+function ksLoad(key){
+  return new Promise(function(ok, no){
+    var go = function(){ try { if (!window.Kakao.isInitialized()) window.Kakao.init(key); ok(window.Kakao); } catch (e) { no(e); } };
+    if (window.Kakao) return go();
+    var s = document.createElement("script"); s.src = KAKAO_SDK; s.crossOrigin = "anonymous"; s.onload = go; s.onerror = function(){ no(new Error("카카오 SDK를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.")); }; document.head.appendChild(s);
+  });
+}
+async function ksSend(){
+  var key = ksKey(); if (!key) { document.getElementById("lKsSet").hidden = false; document.getElementById("lKsKey").focus(); return lSay("카카오 JavaScript 키를 먼저 넣어 주세요. (처음 한 번만)", true); }
+  if (!LINK) return lSay("먼저 [링크 만들기]를 눌러 주세요.", true);
+  var ag = document.getElementById("lAgent").value.trim(), img = location.href.split(/[?#]/)[0].replace(/[^\/]*$/, "") + "og.png";
+  try {
+    var K = await ksLoad(key);
+    K.Share.sendDefault({ objectType: "feed",
+      content: { title: ag ? ag + " 컨설턴트가 보내는 제안서" : "보장 제안서가 도착했어요", description: "맞춤 보장 정리와 치료비 예시를 휴대폰으로 확인해 보세요", imageUrl: img, imageWidth: 1200, imageHeight: 600, link: { mobileWebUrl: LINK, webUrl: LINK } },
+      buttons: [{ title: "제안서 보기", link: { mobileWebUrl: LINK, webUrl: LINK } }] });
+    lSay("✅ 카톡이 열리면 보낼 친구를 고르고 보내기를 눌러 주세요.");
+  } catch (e) { document.getElementById("lKsSet").hidden = false; lSay("카톡 공유가 안 됐어요: " + (e && e.message || e) + " · 키가 맞는지, 카카오 앱에 사이트 도메인을 등록했는지 확인해 주세요.", true); }
+}
+document.getElementById("lKs").onclick = ksSend;
+document.getElementById("lKsSave").onclick = function(){ var k = document.getElementById("lKsKey").value.trim(); if (!/^[0-9a-f]{32}$/i.test(k)) return lSay("JavaScript 키는 영어·숫자 32자예요. 다시 확인해 주세요.", true); try { localStorage.setItem("planKakaoKey", k); } catch (e) {} document.getElementById("lKsKey").value = ""; document.getElementById("lKsSet").hidden = true; ksSend(); };
+document.getElementById("lKsDel").onclick = function(){ try { localStorage.removeItem("planKakaoKey"); } catch (e) {} lSay("저장한 카카오 키를 지웠어요."); };
 if (CUST) (async function(){
   try { DATA = /^#c=/.test(location.hash) ? await unpackData(location.hash.slice(3)) : await openShort(SHORT_ID, location.hash.slice(1)); renderCust(); window.scrollTo(0, 0); }
   catch (e) { document.getElementById("vCust").innerHTML = '<div class="cv"><div class="err"><h2>제안서를 열지 못했어요</h2><p>' + (e && e.message === "gone" ? '링크 보관 기간(90일)이 지났어요. 담당 컨설턴트에게 새 링크를 요청해 주세요.' : '링크가 중간에 잘렸거나 휴대폰 브라우저가 오래됐을 수 있어요. 받은 링크 전체를 다시 눌러 보시거나, 담당 컨설턴트에게 연락해 주세요.') + '</p></div></div>'; }
