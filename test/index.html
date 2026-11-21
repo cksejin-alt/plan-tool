@@ -2072,7 +2072,7 @@ function cutLines(){
   if (!a || c.none) return { cl: cl, cm: cm };
   (a.list || []).forEach(function(x, i){ if (a.skip[i]) cl.push({ t: x.co + " " + x.prod + " 해지", w: numIn(c.amt[i]) || 0, ci: i }); });
   c.dels.forEach(function(d){ var x = a.list[d.ci]; if (!x) return; var rs = Object.keys(d.rows).filter(function(k){ return d.rows[k]; }).map(function(k){ return a.extra[k].co; });
-    cm.push({ t: x.co + " " + x.prod + " " + (rs.length > 1 ? rs[0] + " 등 " + rs.length + "개" : rs[0] || "") + " 담보 삭제", w: numIn(d.w) || 0, ci: +d.ci, rs: rs }); });
+    cm.push({ t: x.co + " " + x.prod + " " + (rs.length > 1 ? rs[0] + " 등 " + rs.length + "개" : rs[0] || "") + " 담보 삭제", w: numIn(d.w), ci: +d.ci, rs: rs }); });
   return { cl: cl, cm: cm };
 }
 function cutStep(){
@@ -2088,7 +2088,7 @@ function cutStep(){
     h += c.dels.map(function(d, di){
       var rows = d.ci === "" ? [] : a.extra.map(function(r, ri){ return { r: r, ri: ri }; }).filter(function(o){ return o.r.ci === +d.ci; });
       return '<div class="cdel"><div class="crow"><select data-dci="' + di + '"><option value="">계약 고르기</option>' + keepI.map(function(i){ var x = a.list[i]; return '<option value="' + i + '"' + (String(d.ci) === String(i) ? ' selected' : '') + '>' + esc(x.co) + ' · ' + esc(x.prod) + '</option>'; }).join('') + '</select>'
-        + '<input inputmode="numeric" data-dw="' + di + '" placeholder="줄어드는 월 보험료" value="' + esc(d.w || '') + '"><i>원</i><button type="button" class="cx" data-dx="' + di + '" title="이 줄 지우기">✕</button></div>'
+        + '<input inputmode="numeric" data-dw="' + di + '" placeholder="모르면 비워 두기" value="' + esc(d.w || '') + '"><i>원</i><button type="button" class="cx" data-dx="' + di + '" title="이 줄 지우기">✕</button></div>'
         + (rows.length ? '<div class="crs">' + rows.map(function(o){ return '<label><input type="checkbox" data-dr="' + di + '" data-ri="' + o.ri + '"' + (d.rows[o.ri] ? ' checked' : '') + '>' + esc(o.r.co) + ' <em>' + won(o.r.amt) + '</em></label>'; }).join('') + '</div>' : (d.ci !== "" ? '<div class="cnone">이 계약에서 읽은 담보가 없어요.</div>' : ''))
         + '</div>'; }).join('');
     h += '<button type="button" class="cadd" id="cAdd">+ 담보 삭제 추가</button>';
@@ -2173,11 +2173,10 @@ function cutApply(){
     for (var i = 0; i < a.list.length; i++) if (a.skip[i] && numIn(c.amt[i]) == null) return cutSay(a.list[i].co + " " + a.list[i].prod + " 해지: 줄어드는 월 보험료를 적어 주세요. (납입이 끝난 계약은 0)");
     for (var j = 0; j < c.dels.length; j++) { var d = c.dels[j];
       if (d.ci === "") return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 계약을 골라 주세요.");
-      if (!Object.keys(d.rows).some(function(k){ return d.rows[k]; })) return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 지울 담보를 체크해 주세요.");
-      if (numIn(d.w) == null) return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 줄어드는 월 보험료를 적어 주세요."); }
+      if (!Object.keys(d.rows).some(function(k){ return d.rows[k]; })) return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 지울 담보를 체크해 주세요."); }
   }
   var cc = cutLines(), all = cc.cl.concat(cc.cm);
-  if (!confirm(all.length ? "이대로 반영할까요?\n\n" + all.map(function(x){ return "· " + x.t + "  −" + wonFull(x.w); }).join("\n") + "\n\n합계 −" + wonFull(all.reduce(function(s, x){ return s + x.w; }, 0)) : "해지·삭제하는 계약이 없는 것으로 반영할까요?")) return;
+  if (!confirm(all.length ? "이대로 반영할까요?\n\n" + all.map(function(x){ return "· " + x.t + "  " + (x.w == null ? "(보험료 확인 전)" : "−" + wonFull(x.w)); }).join("\n") + "\n\n합계 −" + wonFull(all.reduce(function(s, x){ return s + x.w; }, 0)) : "해지·삭제하는 계약이 없는 것으로 반영할까요?")) return;
   cutSay("");
   a.del = {}; if (!c.none) c.dels.forEach(function(d){ Object.keys(d.rows).forEach(function(k){ if (d.rows[k]) a.del[k] = 1; }); });
   pdfBuild(true);
@@ -2352,11 +2351,11 @@ function renderCust(){
     h += '<div class="bz ldg" data-r><div class="core">'
        + (d.noAna ? '' : row('', '지금 월 보험료' + (nOrig ? ' (' + nOrig + '건)' : ''), wonFull(pOrig)))
        + cl.map(function(x){ return row('m', x.t, '− ' + wonFull(x.w)); }).join('')
-       + cm.map(function(x){ return row('m', x.t, '− ' + wonFull(x.w)); }).join('')
+       + cm.map(function(x){ return row('m', x.t, x.w == null ? '확인 중' : '− ' + wonFull(x.w)); }).join('')
        + row('p', '새로 가입하는 보험', '+ ' + wonFull(d.premiumAdd), cNew + cUp ? '담보 ' + (cNew + cUp) + '가지' : '')
        + '<div class="tot"><span>제안 후 월 보험료</span><b class="n">' + cnt(Math.max(pAft, 0), 'full') + '</b></div>'
        + (d.noAna ? '' : '<p class="say">월 <span class="r n">' + wonFull(Math.abs(pDif)) + '</span> ' + (pDif >= 0 ? '더 내고' : '덜 내고') + (top ? ', 아플 때 최대 <span class="r n">+' + won(top.aft - top.now) + '</span> 더 받아요' : ', 보장 ' + (cNew + cUp) + '가지를 채워요') + '</p>')
-       + '<p class="fn">보험료는 나이·건강 상태·심사 결과에 따라 달라질 수 있어요.' + (cl.length ? ' 해지는 새 보험 심사가 끝난 뒤에 정해요.' : '') + '</p></div></div>';
+       + '<p class="fn">보험료는 나이·건강 상태·심사 결과에 따라 달라질 수 있어요.' + (cm.some(function(x){ return x.w == null; }) ? ' 담보 삭제로 줄어드는 보험료는 확인되면 알려 드려요. 제안 후 보험료는 그만큼 더 줄어요.' : '') + (cl.length ? ' 해지는 새 보험 심사가 끝난 뒤에 정해요.' : '') + '</p></div></div>';
     // 오른쪽: 담보 개수와 보장금액
     h += '<div class="bz cvg" data-r style="--i:1"><div class="core"><p class="lbl">보장 담보 수</p><div class="big">'
        + (d.noAna ? '' : '<b class="n" style="color:var(--cm)">' + cB + '</b><span class="ar">→</span>') + '<b class="n" style="color:var(--cr)">' + cnt(cA, 'int') + '</b><span class="ar" style="font-size:20px">가지</span>' + (d.noAna ? '' : '<span class="pl n">+' + (cA - cB) + '</span>') + '</div>'
