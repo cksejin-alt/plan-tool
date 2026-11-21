@@ -239,6 +239,18 @@
   .pd2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
   .pdz{border:2px dashed #D1D5DB;border-radius:12px;padding:16px 12px;text-align:center;color:var(--sub);cursor:pointer;font-size:12.5px} .pdz.on{border-color:var(--red);background:var(--pink)} .pdz b{display:block;color:var(--ink);font-size:14px;margin-bottom:3px} .pst{margin-top:6px;font-weight:700;color:var(--ink)}
   .pcon{border:1px solid #D9DBE0;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px} .pcon small{display:block;color:var(--sub);font-size:11.5px;margin:2px 0 6px} .pcon label{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line);cursor:pointer} .pcon label span{flex:1} .pcon label em{font-style:normal;color:var(--sub);font-size:12px;white-space:nowrap}
+  .pcut{margin-top:12px;border:2px solid var(--red);border-radius:12px;padding:12px 13px;font-size:13px;background:#fff} .pcut.done{border-color:#16A34A}
+  #pCut.warn .pcut{box-shadow:0 0 0 4px rgba(214,51,76,.18)}
+  .pcut>b{font-size:15px} .pcut>small{display:block;color:var(--sub);font-size:11.5px;margin:3px 0 8px}
+  .pcut .none{display:flex;gap:8px;align-items:center;font-weight:700;padding:8px 10px;border-radius:8px;background:var(--bg);cursor:pointer}
+  .pcut .csub{margin:12px 0 4px;font-weight:700} .pcut .csub span{font-weight:400;color:var(--sub);font-size:11.5px}
+  .pcut .crow{display:flex;gap:6px;align-items:center;padding:5px 0} .pcut .crow>span{flex:1;min-width:0} .pcut .crow em{font-style:normal;color:var(--red);font-weight:700} .pcut .crow small{display:block;color:var(--sub);font-size:11px}
+  .pcut input[inputmode],.pcut select{border:1px solid #D9DBE0;border-radius:8px;padding:6px 8px;font:inherit} .pcut input[inputmode]{width:120px;text-align:right} .pcut select{flex:1;min-width:0}
+  .pcut .cdel{border:1px dashed #D9DBE0;border-radius:9px;padding:4px 8px;margin:6px 0} .pcut .crs{display:grid;gap:2px;padding:2px 0 6px} .pcut .crs label{display:flex;gap:6px;align-items:center} .pcut .crs em{font-style:normal;color:var(--sub);margin-left:auto}
+  .pcut .cx{border:0;background:none;cursor:pointer;color:var(--sub);font-size:14px} .pcut .cadd{margin-top:6px;border:1px dashed var(--red);background:#fff;color:var(--red);border-radius:999px;padding:7px 12px;font:600 13px Pretendard,sans-serif;cursor:pointer}
+  .pcut .cnone{color:var(--sub);font-size:12px;padding:4px 0} .pcut .cmsg{display:none;margin-top:8px;color:#9A3412;background:#FFF7ED;border-radius:8px;padding:7px 10px}
+  .bar button.lock{opacity:.45}
+  @media print{ html.needcut body>*{display:none!important} html.needcut body:after{content:"정리하는 보험을 먼저 확인해 주세요 ([📄 PDF로 만들기] 아래 '정리하는 보험이 있나요?')";display:block;padding:40px;font:700 18px sans-serif} }
   .pgo{width:100%;border:0;border-radius:999px;padding:11px;background:var(--red);color:#fff;font:700 15px Pretendard,sans-serif;cursor:pointer} .pgo:disabled{opacity:.4;cursor:default}
   .prc{margin-top:8px;border-radius:9px;padding:8px 11px;background:var(--bg);font-size:13px} .prc.ok{background:#ECFDF3;color:#14532D} .prc.bad{background:#FFF7ED;color:#9A3412} #pResult .pgo{margin-top:10px}
   @media (max-width:560px){ .pf3,.pd2{grid-template-columns:1fr} }
@@ -1222,7 +1234,7 @@ function propGroups(d){
 }
 // PDF를 하나만 넣었을 때: 없는 쪽은 0이 아니라 '확인 전'으로 보인다
 function curW(v){ return M.d.noAna ? "확인 전" : won(v); }
-function curP(d){ return M.d.noAna ? "확인 전" : wonFull(d.premiumNow); }
+function curP(d){ return M.d.noAna ? "확인 전" : wonFull((+d.premiumNow || 0) - (d.cutMan || []).reduce(function(s, x){ return s + (+x.w || 0); }, 0)); } // 담보 삭제로 줄어드는 보험료는 현재 보험료에서 뺀 값(정리 후 유지하는 보험료)
 function curN(u){ return M.d.noAna ? "확인 전" : M.nNow + u; }
 function modeNote(){
   var d = M.d, s = d.noAna ? "보장분석 PDF 없이 만들었어요. 고객이 이미 가진 보험은 넣지 않아서 '현재'는 확인 전이고, 늘어나는 돈은 이번 제안 담보만 더한 금액이에요."
@@ -1921,8 +1933,9 @@ function buildFromPdf(ana, prop, who){
   var D = JSON.parse(TEMPLATE), byN = {};
   D.groups.forEach(function(g){ g.items.forEach(function(it){ it.now = 0; it.add = 0; it.rec = 0; byN[it.n] = it; }); });
   // 해지 예정으로 체크를 푼 계약은 현황표 금액에서 그 계약 담보만큼 빼고, 그 밖의 현재 보장에서도 뺀다
-  var skip = ana.skip || {}, cut = {};
-  ana.extra.forEach(function(x){ if (skip[x.ci]) { var s = x.sig.replace(/\s/g, ""); cut[s] = (cut[s] || 0) + x.amt; } });
+  // 정리 단계에서 '담보 일부 삭제'로 체크한 담보 줄(ana.del, extra 줄 번호)도 같은 방식으로 뺀다
+  var skip = ana.skip || {}, del = ana.del || {}, cut = {};
+  ana.extra.forEach(function(x, i){ if (skip[x.ci] || del[i]) { var s = x.sig.replace(/\s/g, ""); cut[s] = (cut[s] || 0) + x.amt; } });
   ana.order.forEach(function(k){
     var c = ana.cov[k], nm = ANA_MAP[k], nw = ANA_NEW[k];
     if (!nm && !nw) return;
@@ -1932,7 +1945,7 @@ function buildFromPdf(ana, prop, who){
   // 현황표에 없는 현재 보장(수술비·특정질병 등)은 회사담보명 그대로 '그 밖의 현재 보장'에 모은다
   var other = {}, covKeys = {};
   Object.keys(ANA_MAP).concat(Object.keys(ANA_NEW)).forEach(function(k){ covKeys[k] = 1; });
-  ana.extra.forEach(function(x){ if (!covKeys[x.sig] && !skip[x.ci]) other[x.co] = (other[x.co] || 0) + x.amt; });
+  ana.extra.forEach(function(x, i){ if (!covKeys[x.sig] && !skip[x.ci] && !del[i]) other[x.co] = (other[x.co] || 0) + x.amt; });
   var oi = Object.keys(other).map(function(k){ return { n: k, now: other[k], rec: 0, add: 0 }; });
   var extraNew = [], careNew = [], s130 = {}, plus = { "상해": {}, "질병": {} }, matched = 0;
   prop.riders.forEach(function(x){
@@ -1970,13 +1983,12 @@ function buildFromPdf(ana, prop, who){
   D.agent = who.agent || prop.agent || ana.agent || ""; D.branch = who.branch || (prop.branch || ana.branch ? "메리츠화재 " + (prop.branch || ana.branch) : "");
   var gone = (ana.list || []).filter(function(x, i){ return skip[i]; });
   D.skipped = gone.map(function(x){ return x.co + " " + x.prod; });
-  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, paid: !!x.paid, pay: x.pay || "", start: x.start || "", rows: skip[i] ? null : ana.extra.filter(function(r){ return r.ci === i; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
+  D.conList = (ana.list || []).map(function(x, i){ return { co: x.co, prod: x.prod, prem: x.prem, paid: !!x.paid, pay: x.pay || "", start: x.start || "", rows: skip[i] ? null : ana.extra.filter(function(r, ri){ return r.ci === i && !del[ri]; }).map(function(r){ return { n: r.co, sig: r.sig, amt: r.amt, kind: r.kind }; }) }; }).filter(function(x){ return x.rows; });
   // 2023년 이전에 가입한 변호사 선임비용: 대부분 구속·기소된 경우만 보장(경찰 조사 단계는 2022년 말~2023년 상품부터)
   D.lawyerOld = D.conList.filter(function(c){ return c.start && c.start < "2023" && c.rows.some(function(r){ return /변호사/.test(r.n + r.sig); }); }).map(function(c){ return { co: c.co, start: c.start }; });
   D.contracts = ana.contracts - gone.length; D.premiumAdd = prop.total;
-  // 보험료 전후 비교용: 정리하는 보험(납입 중인 것만)과 보험료. 담보 삭제·감액은 화면 고치기에서 직접 적는다.
-  D.cutList = gone.filter(function(x){ return !x.paid && x.prem > 0; }).map(function(x){ return { t: x.co + " " + x.prod + " 해지", w: x.prem }; });
-  D.cutMan = (DATA.cutMan || []).slice(); D.cutN = gone.length;
+  // 보험료 전후 비교용 줄(해지·담보 삭제)은 제안서를 만든 뒤 '정리하는 보험' 단계에서 설계사가 직접 적은 금액으로만 채운다(cutApply)
+  D.cutList = []; D.cutMan = []; D.cutN = gone.length;
   // 현재 월 보험료: 계약마다 보험료를 다 읽었으면 '납입 중이고 체크한 계약'만 더한다. 못 읽은 계약이 있으면 첫 장 합계에서 뺀다.
   var lst = ana.list || [], live = lst.filter(function(x, i){ return !skip[i] && !x.paid; });
   D.paidList = lst.filter(function(x, i){ return !skip[i] && x.paid; }).map(function(x){ return { co: x.co, prod: x.prod, prem: x.prem, pay: x.pay || "" }; });
@@ -1993,7 +2005,7 @@ function conList(){
   if (!a || !a.list || !a.list.length) { box.innerHTML = ""; return; }
   box.innerHTML = '<div class="pcon"><b>현재 가입 상품 ' + a.list.length + '건</b><small>해지할 상품은 체크를 풀어 주세요. 체크한 상품만 현재 보장에 넣어요.</small>'
     + a.list.map(function(x, i){ return '<label><input type="checkbox" data-ci="' + i + '"' + (a.skip[i] ? '' : ' checked') + '><span>' + esc(x.co) + ' · ' + esc(x.prod) + '</span><em>' + premTxt(x) + '</em></label>'; }).join('') + '</div>';
-  [].forEach.call(box.querySelectorAll('input'), function(cb){ cb.onchange = function(){ if (cb.checked) delete a.skip[cb.dataset.ci]; else a.skip[cb.dataset.ci] = 1; document.getElementById("pResult").innerHTML = ""; }; });
+  [].forEach.call(box.querySelectorAll('input'), function(cb){ cb.onchange = function(){ if (cb.checked) delete a.skip[cb.dataset.ci]; else a.skip[cb.dataset.ci] = 1; document.getElementById("pResult").innerHTML = ""; if (DATA.fromPdf) { DATA.cutOk = false; cutGate(); } }; });
 }
 function pdfStatus(){
   var a = PDF_IN.ana, p = PDF_IN.prop, nm = document.getElementById("pName").value.trim(), ag = document.getElementById("pAge").value;
@@ -2018,10 +2030,14 @@ async function pdfTake(kind, file){
     pdfStatus();
   } catch (e) { pdfStatus(); el.insertAdjacentHTML("beforeend", '<div class="ppf" style="color:var(--red)">❌ ' + (kind === "prop" ? esc(file.name) + ': ' : '') + esc(e.message || e) + '</div>'); }
 }
-function pdfBuild(){
+function pdfBuild(keep){
+  if (keep !== true) { PDF_IN.cut = { none: false, amt: {}, dels: [] }; if (PDF_IN.ana) PDF_IN.ana.del = {}; }
   var today = new Date(), z = function(n){ return (n < 10 ? "0" : "") + n; };
   var out = buildFromPdf(PDF_IN.ana || { cov: {}, order: [], extra: [], premium: 0, contracts: 0, odd: 0 }, PDF_IN.prop || { riders: [], total: 0, agent: "", branch: "" }, { name: document.getElementById("pName").value.trim(), age: +document.getElementById("pAge").value, sex: document.getElementById("pSex").value, date: today.getFullYear() + "." + z(today.getMonth() + 1) + "." + z(today.getDate()) });
   out.data.noAna = !PDF_IN.ana; out.data.noProp = !PDF_IN.prop;
+  // 정리하는 보험 단계: 보장분석이 있으면 설계사가 확인(없음 또는 금액 입력)해야 인쇄·링크가 열린다
+  out.data.fromPdf = true; out.data.cutOk = !PDF_IN.ana;
+  if (keep === true) { var cc = cutLines(); out.data.cutList = cc.cl; out.data.cutMan = cc.cm; out.data.cutOk = true; }
   DATA = out.data; renderAll(); buildForm();
   var c = out.check, sumOk = c.total && c.sum === c.total, h = !PDF_IN.prop ? '<div class="prc ok">보장분석 PDF로 현재 보장만 만들었어요. 제안 담보는 없어요.</div>' : '<div class="prc ' + (sumOk ? 'ok' : 'bad') + '">' + (sumOk ? '✅ ' + (PDF_IN.props.length > 1 ? '설계서 ' + PDF_IN.props.length + '개 합산 · ' : '') + '읽은 담보 ' + c.riders + '가지의 보험료 합이 설계서 합계(' + wonFull(c.total) + ')와 같아요.' : '⚠️ 읽은 담보 보험료 합 ' + wonFull(c.sum) + ' ≠ 설계서 합계 ' + wonFull(c.total) + ' — 빠진 담보가 있을 수 있어요. [숫자 고치기]로 꼭 확인해 주세요.') + '</div>';
   var unv = M.grown.filter(function(it){ return it.unv; });
@@ -2032,9 +2048,140 @@ function pdfBuild(){
   if (c.odd) h += '<div class="prc bad">⚠️ 계약표에서 읽지 못한 줄 ' + c.odd + '개 — 그 밖의 현재 보장에 빠졌을 수 있어요.</div>';
   var chk = M.js.filter(function(x){ return x.steps.some(function(s){ return s.rows.some(function(r){ return !r.ok; }); }); }).length;
   if (chk) h += '<div class="prc bad">⚠️ 치료 예시 ' + chk + '가지에 "확인" 표시가 있어요. 통합치료비 가입금액이 약관 지급표(기본형 4천만·8천만·1억 / Ⅱ 4천만·7천만·1억 / 순환계 2천만·3천만·5천만·8천만·1억)에 없는 금액이라 그 금액은 합계에서 빠졌어요.</div>';
-  h += '<div class="prc">금액은 PDF에서 자동으로 읽은 값이에요. 고객에게 보여 주기 전에 설계서와 한 번 더 맞춰 보세요.</div><button class="pgo" onclick="pdfBox(false);setView(\'sum\');window.scrollTo(0,0)">제안서 보기</button>'
-     + '<button class="pgo" style="background:var(--ink)" onclick="pdfBox(false);linkBox(true)">🔗 고객에게 보낼 링크 만들기</button>';
+  h += '<div class="prc">금액은 PDF에서 자동으로 읽은 값이에요. 고객에게 보여 주기 전에 설계서와 한 번 더 맞춰 보세요.</div>'
+     + (PDF_IN.ana ? '<div id="pCut"></div>' : '')
+     + '<button class="pgo pAfter" onclick="pdfBox(false);setView(\'sum\');window.scrollTo(0,0)">제안서 보기</button>'
+     + '<button class="pgo pAfter" style="background:var(--ink)" onclick="pdfBox(false);linkBox(true)">🔗 고객에게 보낼 링크 만들기</button>';
   document.getElementById("pResult").innerHTML = h;
+  if (PDF_IN.ana) cutStep();
+  cutGate();
+}
+// ---------- 정리하는 보험 (해지·담보 삭제) ----------
+// 체크를 푼 계약 = 해지 줄. 줄어드는 월 보험료는 설계사가 직접 적는다(PDF 금액은 참고). 담보만 지우는 경우는 [+ 담보 삭제 추가].
+function cutNeed(){ return !!(DATA.fromPdf && !DATA.cutOk); }
+function cutGate(){
+  var lock = cutNeed();
+  [].forEach.call(document.querySelectorAll("#pResult .pAfter"), function(b){ b.disabled = lock; });
+  ["bPrint", "bLink"].forEach(function(id){ var b = document.getElementById(id); b.classList.toggle("lock", lock); b.title = lock ? "정리하는 보험을 먼저 확인해 주세요" : ""; });
+  document.documentElement.classList.toggle("needcut", lock);
+}
+function cutBlocked(){ if (!cutNeed()) return false; pdfBox(true); var c = document.getElementById("pCut"); if (c) { c.scrollIntoView({ block: "center" }); c.classList.add("warn"); } alert("먼저 '정리하는 보험이 있나요?'를 확인해 주세요.\n해지·담보 삭제가 없으면 '해지·삭제하는 계약이 없습니다'를 고르면 돼요."); return true; }
+function numIn(v){ v = String(v == null ? "" : v).replace(/[^0-9]/g, ""); return v === "" ? null : +v; }
+function cutLines(){
+  var a = PDF_IN.ana, c = PDF_IN.cut, cl = [], cm = [];
+  if (!a || c.none) return { cl: cl, cm: cm };
+  (a.list || []).forEach(function(x, i){ if (a.skip[i]) cl.push({ t: x.co + " " + x.prod + " 해지", w: numIn(c.amt[i]) || 0, ci: i }); });
+  c.dels.forEach(function(d){ var x = a.list[d.ci]; if (!x) return; var rs = Object.keys(d.rows).filter(function(k){ return d.rows[k]; }).map(function(k){ return a.extra[k].co; });
+    cm.push({ t: x.co + " " + x.prod + " " + (rs.length > 1 ? rs[0] + " 등 " + rs.length + "개" : rs[0] || "") + " 담보 삭제", w: numIn(d.w) || 0, ci: +d.ci, rs: rs }); });
+  return { cl: cl, cm: cm };
+}
+function cutStep(){
+  var a = PDF_IN.ana, c = PDF_IN.cut, box = document.getElementById("pCut"); if (!box) return;
+  var sk = (a.list || []).map(function(x, i){ return i; }).filter(function(i){ return a.skip[i]; }), keepI = (a.list || []).map(function(x, i){ return i; }).filter(function(i){ return !a.skip[i]; });
+  var h = '<div class="pcut' + (DATA.cutOk ? ' done' : '') + '"><b>정리하는 보험이 있나요?</b><small>해지하거나 담보를 지워서 보험료를 줄이는 계약을 적어 주세요. 적은 금액이 고객 링크와 인쇄물에 그대로 들어가요. 이 단계를 마쳐야 인쇄·링크 보내기가 열려요.</small>'
+    + '<label class="none"><input type="checkbox" id="cNone"' + (c.none ? ' checked' : '') + '> 해지·삭제하는 계약이 없습니다</label>';
+  if (!c.none) {
+    h += '<div class="csub">해지하는 계약 <span>(위 목록에서 체크를 푼 계약)</span></div>';
+    h += sk.length ? sk.map(function(i){ var x = a.list[i]; return '<div class="crow"><span>' + esc(x.co) + ' · ' + esc(x.prod) + ' <em>해지</em><small>PDF 참고: ' + premTxt(x) + '</small></span><input inputmode="numeric" data-amt="' + i + '" placeholder="줄어드는 월 보험료" value="' + esc(c.amt[i] == null ? '' : c.amt[i]) + '"><i>원</i></div>'; }).join('')
+      : '<div class="cnone">체크를 푼 계약이 없어요. 해지하는 계약이 있으면 위 목록에서 체크를 풀어 주세요.</div>';
+    h += '<div class="csub">담보 일부 삭제 <span>(해지는 안 하고 담보만 지워 보험료를 줄이는 경우)</span></div>';
+    h += c.dels.map(function(d, di){
+      var rows = d.ci === "" ? [] : a.extra.map(function(r, ri){ return { r: r, ri: ri }; }).filter(function(o){ return o.r.ci === +d.ci; });
+      return '<div class="cdel"><div class="crow"><select data-dci="' + di + '"><option value="">계약 고르기</option>' + keepI.map(function(i){ var x = a.list[i]; return '<option value="' + i + '"' + (String(d.ci) === String(i) ? ' selected' : '') + '>' + esc(x.co) + ' · ' + esc(x.prod) + '</option>'; }).join('') + '</select>'
+        + '<input inputmode="numeric" data-dw="' + di + '" placeholder="줄어드는 월 보험료" value="' + esc(d.w || '') + '"><i>원</i><button type="button" class="cx" data-dx="' + di + '" title="이 줄 지우기">✕</button></div>'
+        + (rows.length ? '<div class="crs">' + rows.map(function(o){ return '<label><input type="checkbox" data-dr="' + di + '" data-ri="' + o.ri + '"' + (d.rows[o.ri] ? ' checked' : '') + '>' + esc(o.r.co) + ' <em>' + won(o.r.amt) + '</em></label>'; }).join('') + '</div>' : (d.ci !== "" ? '<div class="cnone">이 계약에서 읽은 담보가 없어요.</div>' : ''))
+        + '</div>'; }).join('');
+    h += '<button type="button" class="cadd" id="cAdd">+ 담보 삭제 추가</button>';
+  }
+  h += '<div id="cMsg" class="cmsg"></div><button type="button" class="pgo" id="cOk" style="margin-top:10px;background:#14532D">' + (DATA.cutOk ? '✅ 반영했어요 · 고치면 다시 눌러 주세요' : '확인하고 반영하기') + '</button>'
+    + (DATA.cutOk && !c.none && (DATA.cutList.length || DATA.cutMan.length) ? '<button type="button" class="pgo" id="cGuide" style="margin-top:8px;background:#fff;color:var(--ink);border:1px solid #D9DBE0">📋 고객에게 보낼 해지·삭제 안내 복사</button>' : '')
+    + '</div>';
+  box.innerHTML = h;
+  var dirty = function(){ if (DATA.cutOk) { DATA.cutOk = false; cutGate(); var ok = document.getElementById("cOk"); if (ok) ok.textContent = "확인하고 반영하기"; box.firstChild.classList.remove("done"); var g = document.getElementById("cGuide"); if (g) g.remove(); } };
+  box.querySelector("#cNone").onchange = function(e){ c.none = e.target.checked; dirty(); cutStep(); };
+  box.oninput = function(e){ var t = e.target;
+    if (t.dataset.amt != null) { c.amt[t.dataset.amt] = t.value; dirty(); }
+    else if (t.dataset.dw != null) { c.dels[t.dataset.dw].w = t.value; dirty(); } };
+  box.onchange = function(e){ var t = e.target;
+    if (t.dataset.dci != null) { c.dels[t.dataset.dci].ci = t.value; c.dels[t.dataset.dci].rows = {}; dirty(); cutStep(); }
+    else if (t.dataset.dr != null) { c.dels[t.dataset.dr].rows[t.dataset.ri] = t.checked; dirty(); } };
+  box.onclick = function(e){ var t = e.target;
+    if (t.id === "cAdd") { c.dels.push({ ci: "", rows: {}, w: "" }); dirty(); cutStep(); }
+    else if (t.dataset.dx != null) { c.dels.splice(+t.dataset.dx, 1); dirty(); cutStep(); }
+    else if (t.id === "cOk") cutApply();
+    else if (t.id === "cGuide") cutGuideCopy(); };
+}
+// 보험사 상담 전화 (2026-11-21 확인: 손해보험협회 회원사 목록 knia.or.kr/about/partner/partner01 '전화',
+// 생명보험협회 회원사 목록 klia.or.kr/klia/company/member/list.do '상담'(신한라이프는 '대표'), 예별손해보험은 손보협회 목록의 비회원 줄). 번호는 바뀔 수 있음.
+var CALLC = [
+  [/교보라이프플래닛/, "교보라이프플래닛", "1566-0999"], [/교보/, "교보생명", "1588-1001"],
+  [/삼성생명/, "삼성생명", "1588-3114"], [/삼성화재|삼성/, "삼성화재", "1588-5114"],
+  [/한화생명/, "한화생명", "1588-6363"], [/한화손해|한화손보|한화/, "한화손해보험", "1566-8000"],
+  [/흥국생명/, "흥국생명", "1588-2288"], [/흥국/, "흥국화재", "1688-1688"],
+  [/DB생명|동부생명/i, "DB생명", "1588-3131"], [/DB|동부화재/i, "DB손해보험", "1588-0100"],
+  [/KB라이프|KB생명|푸르덴셜/i, "KB라이프생명", "1588-3374"], [/KB/i, "KB손해보험", "1544-0114"],
+  [/농협생명|NH생명/i, "NH농협생명", "1544-4000"], [/농협|NH/i, "NH농협손해보험", "1644-9000"],
+  [/하나생명/, "하나생명", "1577-1112"], [/하나/, "하나손해보험", "1566-3000"],
+  [/신한EZ/i, "신한EZ손해보험", "1544-2580"], [/신한|오렌지라이프/, "신한라이프", "1588-5580"],
+  [/푸본|현대라이프/, "푸본현대생명", "1577-3311"], [/현대해상|현대/, "현대해상", "1588-5656"],
+  [/메리츠/, "메리츠화재", "1566-7711"], [/롯데/, "롯데손해보험", "1588-3344"],
+  [/MG|예별/i, "예별손해보험(옛 MG손해보험)", "1588-5959"], [/AXA|악사/i, "AXA손해보험", "1566-1566"],
+  [/AIG/i, "AIG손해보험", "1544-2792"], [/카카오/, "카카오페이손해보험", "1544-0022"],
+  [/AIA/i, "AIA생명", "1588-9898"], [/ABL|알리안츠/i, "ABL생명", "1588-6500"],
+  [/미래에셋/, "미래에셋생명", "1588-0220"], [/KDB|산은/i, "KDB생명", "1588-4040"],
+  [/iM라이프|DGB|아이엠라이프/, "iM라이프생명", "1588-4770"], [/동양/, "동양생명", "1577-1004"],
+  [/메트라이프|MetLife/i, "메트라이프생명", "1588-9600"], [/처브|라이나/, null, null],
+  [/BNP|카디프/i, "BNP파리바카디프생명", "1688-1118"]
+];
+function callOf(co){
+  if (/라이나/.test(co)) return { n: "라이나생명", t: "1588-0058" };
+  if (/처브/.test(co)) return { n: "처브라이프생명", t: "1599-4600" };
+  for (var i = 0; i < CALLC.length; i++) if (CALLC[i][0].test(co) && CALLC[i][1]) return { n: CALLC[i][1], t: CALLC[i][2] };
+  return null;
+}
+function cutGuideText(){
+  var a = PDF_IN.ana, all = DATA.cutList.map(function(x){ return { k: "해지", x: x }; }).concat(DATA.cutMan.map(function(x){ return { k: "삭제", x: x }; }));
+  var t = "[보험 정리 안내]\n" + (DATA.customer ? DATA.customer + " 고객님, " : "고객님, ") + "새 보험 가입이 확정되면 아래 순서대로 정리해 주세요.\n(가입 확정 문자를 받기 전에는 해지하지 마세요. 보장이 비는 기간이 생길 수 있어요.)\n";
+  all.forEach(function(o, k){
+    var c = a.list[o.x.ci] || { co: "", prod: "" }, cc = callOf(c.co);
+    t += "\n" + (k + 1) + ") " + c.co + " " + c.prod + " - " + (o.k === "해지" ? "해지" : (o.x.rs || []).join(", ") + " 담보 삭제") + "\n"
+      + "☎ " + (cc ? cc.n + " " + cc.t : c.co + " 고객센터 (번호는 증권에서 확인)") + " → 상담원 연결\n"
+      + (o.k === "해지" ? "말씀하실 것: \"계약자 본인이에요. " + c.prod + " 계약 해지 접수하려고요.\"\n"
+                        : "말씀하실 것: \"계약자 본인이에요. " + c.prod + " 계약에서 " + (o.x.rs || []).join(", ") + " 특약만 삭제해 주세요. 나머지는 유지할게요. 바뀐 월 보험료도 알려 주세요.\"\n");
+  });
+  t += "\n상담원이 다시 권하면 이렇게 말씀하세요\n"
+     + "· \"해지하면 손해예요\" → \"네, 돌려받는 금액도 안내받았고 알고 결정했어요. 접수해 주세요.\"\n"
+     + "· \"보험료 낮춰 드릴게요, 다른 상품도 있어요\" → \"감사하지만 이미 비교해 보고 정했어요. 요청한 대로만 처리해 주세요.\"\n"
+     + "· \"다시 가입하기 어려울 수 있어요\" → \"그 부분도 알고 있어요. 새 보험 가입은 이미 확정됐어요.\"\n"
+     + "· \"담당 설계사와 먼저 상의해 보세요\" → \"이미 상의하고 정했어요. 오늘 접수 부탁드려요.\"\n"
+     + "\n준비물: 신분증, 증권번호, 돌려받을 계좌\n마지막에: \"처리 완료 문자 보내 주시고, 돌려받는 돈 들어오는 날짜도 알려 주세요.\"\n"
+     + "\n궁금한 점은 " + (DATA.agent ? DATA.agent + " 컨설턴트" : "담당 컨설턴트") + "에게 편하게 연락 주세요.";
+  return t;
+}
+async function cutGuideCopy(){
+  var box = document.getElementById("pCut"), ta = document.getElementById("cGuideT");
+  if (!ta) { box.querySelector(".pcut").insertAdjacentHTML("beforeend", '<textarea id="cGuideT" rows="14" style="width:100%;margin-top:8px;border:1px solid #D9DBE0;border-radius:8px;padding:8px;font:12.5px/1.5 Pretendard,sans-serif"></textarea><small style="display:block;color:var(--sub);font-size:11px;margin-top:4px">고객 화면에는 나오지 않아요. 고쳐서 카톡에 붙여 넣으세요. 보험사 번호는 2026-11-21 손해보험협회·생명보험협회 회원사 목록 기준이에요.</small>'); ta = document.getElementById("cGuideT"); ta.value = cutGuideText(); }
+  var ok = await copyText(ta.value); cutSay(""); var g = document.getElementById("cGuide"); if (g) g.textContent = ok ? "✅ 복사했어요 · 다시 누르면 아래 글을 복사해요" : "복사가 안 됐어요. 아래 글을 직접 복사해 주세요";
+}
+function cutSay(t){ var m = document.getElementById("cMsg"); if (m) { m.textContent = t; m.style.display = t ? "block" : "none"; } }
+function cutApply(){
+  var a = PDF_IN.ana, c = PDF_IN.cut, sk = (a.list || []).filter(function(x, i){ return a.skip[i]; });
+  if (c.none) {
+    if (sk.length) return cutSay("위 목록에서 체크를 푼 계약이 " + sk.length + "건 있어요. 해지하지 않으면 다시 체크해 주시고, 해지하면 '없습니다' 선택을 풀고 금액을 적어 주세요.");
+  } else {
+    if (!sk.length && !c.dels.length) return cutSay("해지·삭제하는 계약이 없으면 '해지·삭제하는 계약이 없습니다'를 골라 주세요.");
+    for (var i = 0; i < a.list.length; i++) if (a.skip[i] && numIn(c.amt[i]) == null) return cutSay(a.list[i].co + " " + a.list[i].prod + " 해지: 줄어드는 월 보험료를 적어 주세요. (납입이 끝난 계약은 0)");
+    for (var j = 0; j < c.dels.length; j++) { var d = c.dels[j];
+      if (d.ci === "") return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 계약을 골라 주세요.");
+      if (!Object.keys(d.rows).some(function(k){ return d.rows[k]; })) return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 지울 담보를 체크해 주세요.");
+      if (numIn(d.w) == null) return cutSay("담보 삭제 " + (j + 1) + "번째 줄: 줄어드는 월 보험료를 적어 주세요."); }
+  }
+  var cc = cutLines(), all = cc.cl.concat(cc.cm);
+  if (!confirm(all.length ? "이대로 반영할까요?\n\n" + all.map(function(x){ return "· " + x.t + "  −" + wonFull(x.w); }).join("\n") + "\n\n합계 −" + wonFull(all.reduce(function(s, x){ return s + x.w; }, 0)) : "해지·삭제하는 계약이 없는 것으로 반영할까요?")) return;
+  cutSay("");
+  a.del = {}; if (!c.none) c.dels.forEach(function(d){ Object.keys(d.rows).forEach(function(k){ if (d.rows[k]) a.del[k] = 1; }); });
+  pdfBuild(true);
+  var b = document.getElementById("pCut"); if (b) b.scrollIntoView({ block: "center" });
 }
 ["ana", "prop"].forEach(function(k){
   var dz = document.getElementById(k === "ana" ? "pAna" : "pProp"), inp = dz.querySelector("input");
@@ -2052,7 +2199,7 @@ document.getElementById("bPdf").onclick = function(){ pdfBox(true); };
 document.getElementById("bSum").onclick = function(){ setView("sum"); };
 document.getElementById("bPt").onclick = function(){ setView("pt"); };
 document.getElementById("bEdit").onclick = function(){ panel(!document.getElementById("panel").classList.contains("open")); };
-document.getElementById("bPrint").onclick = function(){ window.print(); };
+document.getElementById("bPrint").onclick = function(){ if (cutBlocked()) return; window.print(); };
 document.getElementById("prev").onclick = function(){ showSlide(cur - 1); };
 document.getElementById("next").onclick = function(){ showSlide(cur + 1); };
 document.getElementById("full").onclick = function(){ var el = document.getElementById("vPt"); if (el.requestFullscreen) el.requestFullscreen(); };
@@ -2086,6 +2233,7 @@ function slimData(withName){
     if (!(+it.now) && !(+it.add)) return { n: it.n };
     delete it.rec; delete it.s; if (!(+it.add > 0)) delete it.rider; return it; }); });
   d.cut = (d.skipped || []).length;
+  ["cutList", "cutMan"].forEach(function(k){ d[k] = (d[k] || []).map(function(x){ return { t: x.t, w: x.w }; }); }); delete d.fromPdf; delete d.cutOk; // 고객 링크에는 줄 이름·금액만
   delete d.skipped; delete d.paidList;
   d.conList = (d.conList || []).map(function(c){ return { co: c.co, rows: (c.rows || []).filter(function(r){ return /수술|순환계|변호사/.test(r.n + "|" + r.sig); }) }; });
   if (!withName) { d.customer = ""; d.age = 0; }
@@ -2351,10 +2499,11 @@ async function copyText(t){
     var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand("copy"); } catch (e2) {} ta.remove(); return ok; }
 }
 function lFull(){ return document.getElementById("lMsg").value.trim() + "\n" + LINK; }
-document.getElementById("bLink").onclick = function(){ linkBox(true); };
+document.getElementById("bLink").onclick = function(){ if (cutBlocked()) return; linkBox(true); };
 document.getElementById("lMake").onclick = async function(){
   var ph = document.getElementById("lPhone").value.trim(), ag = document.getElementById("lAgent").value.trim();
   if (M.all.every(function(it){ return !(+it.now) && !(+it.add); })) return lSay("먼저 [📄 PDF로 만들기]로 제안서를 만들어 주세요.", true);
+  if (cutNeed()) return lSay("먼저 [📄 PDF로 만들기]에서 '정리하는 보험이 있나요?'를 확인해 주세요.", true);
   if (telNum(ph).length < 9) return lSay("고객이 전화할 번호를 넣어 주세요.", true);
   try { localStorage.setItem("planAgentPhone", ph); } catch (e) {}
   var d = slimData(document.getElementById("lName").checked); d.phone = ph; d.agent = ag;
