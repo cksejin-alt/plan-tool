@@ -271,7 +271,7 @@
   html.cust body{background:#FBFBFC} html.cust .bar,html.cust .view,html.cust .panel,html.cust .pbox{display:none!important}
   #vCust{display:none} html.cust #vCust{display:block}
   .cv{--cr:#D6334C;--cr2:#F2708A;--ci:#0F1115;--cs:#5F6670;--cm:#A3A8B0;--cl:rgba(15,17,21,.07);--cb:#F3F4F6;--ez:cubic-bezier(.16,1,.3,1);--sw:cubic-bezier(.45,0,.55,1);
-    color:var(--ci);word-break:keep-all;font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;font-size:16px;line-height:1.65;overflow-x:clip;position:relative;-webkit-font-smoothing:antialiased}
+    color:var(--ci);word-break:keep-all;font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;font-size:16px;line-height:1.65;overflow-wrap:anywhere;position:relative;-webkit-font-smoothing:antialiased}
   .cv .n{font-family:Outfit,"Pretendard Variable",Pretendard,sans-serif;font-feature-settings:"tnum";letter-spacing:-.02em}
   .cv .w{max-width:1120px;margin:0 auto;padding:0 20px}
   .cv a{color:inherit;text-decoration:none}
@@ -493,6 +493,10 @@
     .cv .btns .pill{width:100%} .cv .two b{font-size:20px} .cv .ja{flex-direction:column;align-items:flex-start;gap:2px} .cv .ja>b{font-size:30px;white-space:nowrap} .cv .ja>span{text-align:left}
   }
   /* ===== 2차 꾸밈 (수파노바 리디자인): 여는 막, 심장 박동 선, 3D 기울기, 떠 있는 칩, 쌓이는 카드, 단어 등장, 빛 따라오기, 큰 글씨 띠, 커서 ===== */
+  /* 작은 폰: 넘치면 잘리지 않고 옆으로 밀어서 보이게. 꾸밈(빛·띠)은 각 구역 안에서만 잘림 */
+  html.cust{-webkit-text-size-adjust:100%;text-size-adjust:100%} html.cust,html.cust body{overflow-x:auto;max-width:none} html.cust body{-webkit-overflow-scrolling:touch}
+  .cv .core,.cv .row>span,.cv .tile,.cv .bz{min-width:0} .cv .eyebrow{flex-wrap:wrap;max-width:100%} .cv .tw{max-width:100%}
+  @media (max-width:360px){ .cv .w{padding:0 12px} .cv .bz>.core{padding:20px 16px} .cv .ldg .row{font-size:15px} .cv .ldg .row b{font-size:16px} .cv .ldg .tot{padding:18px} .cv .cvg .big b{font-size:44px} }
   html.cust{scroll-behavior:smooth} .cv h1,.cv h2{text-wrap:balance}
   @property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
   .cv .intro{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:#0F1115;color:#fff;animation:cvLift 1.05s var(--ez) .75s forwards;pointer-events:none}
