@@ -1185,10 +1185,10 @@ function careBox(){
     return '<td>' + (sh.length ? sh.map(line).join('') : '<div class="cx"><span class="cp">1~180일</span>없음</div>') + (lg.length ? lg.map(line).join('') : '<div class="cx"><span class="cp l">181일~</span>없음</div>') + '</td>';
   };
   var h = '<div class="st"><h2>🧑‍⚕️ 간병인 보장</h2><small>하루 금액 · 가입 후</small></div>';
-  if (!any) return h + '<div class="care0">간병인 보장(사용일당·지원일당)이 없어요. 입원해서 간병인을 쓰면 그 비용은 본인이 내야 해요.</div>';
+  if (!any) return h + '<div class="care0">간병인 보장(사용일당·지원일당)이 없어요. 입원해서 간병인을 쓰면 그 비용은 본인이 내야 해요.<br><b>간병인 비용은 실손보험에서도 1원도 나오지 않아요</b>(실손보험이 보상하지 않는 항목). 그래서 간병인 보장이 따로 있어야 받을 수 있어요.</div>';
   h += '<table class="care"><tr><th rowspan="2"></th><th colspan="2">간병인 사용일당<small>직접 쓰고 청구</small></th><th rowspan="2">간병인 지원일당<small>회사가 간병인 보내 줌<br>일반·요양병원 모두</small></th><th rowspan="2">간호·간병통합<small>보호자 없는 병동</small></th></tr><tr><th>일반병원</th><th>요양병원</th></tr>';
   [["dis", "질병"], ["inj", "상해"]].forEach(function(w){ h += '<tr><th>' + w[1] + '</th>' + cell(w[0], "useGen") + cell(w[0], "useNh") + cell(w[0], "sup") + cell(w[0], "nis") + '</tr>'; });
-  return h + '</table><div class="rnote">1~180일 = 한 번 입원에 180일까지, 181일~ = 181일째부터 이어서 보장. 지원일당 181일 이상은 요양·정신·한방병원 입원은 빠져요. 실제 지급 조건은 약관을 따라요.</div>';
+  return h + '</table><div class="rnote">1~180일 = 한 번 입원에 180일까지, 181일~ = 181일째부터 이어서 보장. 지원일당 181일 이상은 요양·정신·한방병원 입원은 빠져요. 실제 지급 조건은 약관을 따라요.<br><b>간병인 비용은 실손보험에서 보상하지 않아요.</b> 간병인 보장이 있어야 받을 수 있어요.</div>';
 }
 // 지금 가입한 보험: 보장분석 PDF의 상품별 가입현황(회사 담보명·가입금액)을 계약마다 보여 주고, 담보 이름으로 쉬운 뜻을 붙인다.
 // 설명은 담보 이름으로 본 일반적인 뜻이다. 회사마다 조건이 달라 금액·조건은 증권·약관을 따른다.
