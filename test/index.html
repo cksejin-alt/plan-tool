@@ -684,6 +684,78 @@
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&display=swap">
+<style id="nova">
+  /* ===== 요약형·PT형 다시 꾸밈 (2026-11-22, 수파노바 기준) =====
+     크기·간격(쪽 높이)은 그대로 두고 글꼴·색·표면·머리글·숫자 서체만 바꾼다. 움직임은 화면에서만, 인쇄에는 없음. */
+  .page,.slide{font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+  .kpi b,.pm b,.w2 b,.c3 .big,.bigbar .v,.bars .bv,.rca,.jx .s .sum,.fb .g2 b,.fb .g3 b,.slide .pg,table.n td.big{font-family:"Outfit","Pretendard Variable",Pretendard,sans-serif;letter-spacing:-.02em}
+  /* 쪽 바탕: 아주 옅은 빛 번짐 */
+  .page{background:radial-gradient(520px 260px at 100% 0,rgba(224,51,74,.06),transparent 70%),radial-gradient(420px 240px at 0 100%,rgba(255,196,160,.07),transparent 70%),#fff;border-radius:14px;box-shadow:0 24px 60px -28px rgba(31,35,40,.25),0 0 0 1px rgba(31,35,40,.04)}
+  .page:before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--red),var(--red2) 60%,#F59E8B)}
+  /* 머리글 */
+  .ph{border-bottom:0;position:relative}
+  .ph:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--ink),var(--ink) 30%,rgba(31,35,40,.12))}
+  .ph .tag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px 4px 9px;background:linear-gradient(135deg,var(--red),var(--red2));box-shadow:0 6px 14px -8px rgba(177,18,38,.8)}
+  .ph .tag:before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;opacity:.9}
+  .ph h1{letter-spacing:-.04em;font-weight:800}
+  /* 숫자 칸: 유리판 + 금속 테 */
+  .kpi div{background:#fff;box-shadow:inset 0 0 0 1px rgba(31,35,40,.07),0 10px 24px -18px rgba(31,35,40,.35);border-radius:14px}
+  .kpi .hi{background:linear-gradient(135deg,#B11226,#E0334A);box-shadow:0 14px 28px -16px rgba(177,18,38,.75);position:relative;overflow:hidden}
+  .kpi .hi:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.22) 48%,transparent 62%)}
+  /* 구역 제목: 왼쪽 빨간 막대 */
+  .st h2{position:relative;padding-left:12px;letter-spacing:-.03em}
+  .st h2:before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:4px;border-radius:4px;background:linear-gradient(180deg,var(--red),var(--red2))}
+  /* 표: 둥근 머리줄, 줄무늬 없이 얇은 선 */
+  table.n{border-collapse:separate;border-spacing:0}
+  table.n th{background:#1F2328}
+  table.n tr:first-child th:first-child{border-top-left-radius:10px} table.n tr:first-child th:last-child{border-top-right-radius:10px}
+  table.n tr.grp td{background:linear-gradient(90deg,#F4F4F6,#FAFAFB)}
+  table.n td.big{letter-spacing:-.02em}
+  .pt{border-radius:999px}
+  .sb,.fb{border-color:rgba(31,35,40,.07);box-shadow:0 10px 24px -20px rgba(31,35,40,.35)}
+  .warn{border-radius:14px;background:linear-gradient(135deg,#FFF7F8,#FFFDFD)}
+  .hb{border-radius:999px} .hb i:first-child{border-radius:999px 0 0 999px}
+  .fb .tl .on{background:linear-gradient(135deg,var(--red),var(--red2))}
+  /* ===== PT형 장 ===== */
+  .slide{border-radius:18px;background:radial-gradient(700px 380px at 105% -5%,rgba(224,51,74,.07),transparent 70%),radial-gradient(600px 340px at -10% 105%,rgba(255,196,160,.09),transparent 70%),#fff;box-shadow:0 40px 80px -40px rgba(31,35,40,.45),0 0 0 1px rgba(31,35,40,.05)}
+  .slide .kick{display:inline-flex;align-items:center;gap:8px;background:rgba(177,18,38,.08);letter-spacing:.01em}
+  .slide .kick:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px rgba(177,18,38,.12)}
+  .slide h2{letter-spacing:-.045em}
+  .slide h2 em{background:linear-gradient(90deg,var(--red),var(--red2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .slide .pg{background:rgba(31,35,40,.05);border-radius:999px;padding:3px 10px;font-size:12px}
+  .cvb{background:radial-gradient(420px 260px at 90% 10%,rgba(255,255,255,.18),transparent 70%),radial-gradient(380px 240px at 0 120%,rgba(255,170,150,.35),transparent 70%),linear-gradient(135deg,#9E0F22,#D6243F 55%,#E8465C);position:relative;overflow:hidden}
+  .cvb:after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 40px rgba(255,255,255,.04),0 0 0 80px rgba(255,255,255,.03)}
+  .cvt{letter-spacing:-.04em}
+  .c3,.w3,.jx .s,.w2 div,.pm div,.rc{box-shadow:inset 0 0 0 1px rgba(31,35,40,.06),0 16px 30px -24px rgba(31,35,40,.4)}
+  .pm .hi,.c3 .pl{background:linear-gradient(135deg,var(--red),var(--red2))}
+  .rc{border-color:transparent}
+  .bigbar .tr,.bars .bt{background:#EEF0F3}
+  .bigbar .tr i,.bars .bt i{transform-origin:0 50%}
+  .msg{background:linear-gradient(135deg,#FDECEF,#FFF6F7);box-shadow:inset 0 0 0 1px rgba(177,18,38,.08)}
+  .chk{border-radius:18px}
+  .nav button{box-shadow:0 12px 24px -12px rgba(31,35,40,.6);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+  .nav button:hover{transform:translateY(-2px)} .nav button:active{transform:scale(.97)}
+  /* ===== 화면에서만 움직임 ===== */
+  @media screen and (prefers-reduced-motion:no-preference){
+    @keyframes nvUp{from{opacity:0;transform:translateY(18px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+    @keyframes nvBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @keyframes nvSheen{0%{transform:translateX(-120%)}50%,100%{transform:translateX(120%)}}
+    .view.on .page{animation:nvUp .9s cubic-bezier(.16,1,.3,1) both} .view.on .page:nth-child(2){animation-delay:.08s} .view.on .page:nth-child(3){animation-delay:.16s} .view.on .page:nth-child(n+4){animation-delay:.24s}
+    .kpi .hi:after{transform:translateX(-120%);animation:nvSheen 5s cubic-bezier(.16,1,.3,1) 1s infinite}
+    .slide.enter>*:not(.pg):not(.src){animation:nvUp .8s cubic-bezier(.16,1,.3,1) both}
+    .slide.enter>*:nth-child(2){animation-delay:.06s} .slide.enter>*:nth-child(3){animation-delay:.12s} .slide.enter>*:nth-child(4){animation-delay:.18s}
+    .slide.enter>*:nth-child(5){animation-delay:.24s} .slide.enter>*:nth-child(6){animation-delay:.3s} .slide.enter>*:nth-child(n+7){animation-delay:.36s}
+    .slide.enter .bigbar .tr i,.slide.enter .bars .bt i,.slide.enter .hb i{animation:nvBar 1.3s cubic-bezier(.16,1,.3,1) .35s both}
+    .slide.enter .c3,.slide.enter .rc,.slide.enter .jx .s{animation:nvUp .8s cubic-bezier(.16,1,.3,1) both}
+    .slide.enter .c3:nth-child(2),.slide.enter .rc:nth-child(2n){animation-delay:.1s} .slide.enter .c3:nth-child(3){animation-delay:.2s}
+    .slide .cvb:before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);transform:translateX(-120%);animation:nvSheen 6s cubic-bezier(.16,1,.3,1) 1.2s infinite;pointer-events:none}
+    .c3,.rc,.w2 div,.pm div{transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s cubic-bezier(.16,1,.3,1)}
+    .c3:hover,.rc:hover,.w2 div:hover,.pm div:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1px rgba(177,18,38,.12),0 22px 36px -24px rgba(31,35,40,.45)}
+  }
+  @media print{ .slide h2 em{background:none;color:var(--red)} .page,.slide,.slide *,.page *{animation:none!important;transition:none!important} .page{box-shadow:none;border-radius:0} .slide{box-shadow:none;border-radius:0} .kpi .hi:after,.cvb:before{display:none} }
+</style>
 </head>
 <body>
 <div class="bar">
@@ -1661,6 +1733,7 @@ function showSlide(i){
   cur = Math.max(0, Math.min(SL.length - 1, i));
   [].forEach.call(document.querySelectorAll('#stage .slide'), function(el, k){ el.style.display = k === cur ? '' : 'none'; });
   fit();
+  var on = document.querySelectorAll('#stage .slide')[cur]; if (on) { on.classList.remove("enter"); void on.offsetWidth; on.classList.add("enter"); }
 }
 
 // ---------- 화면 전환·입력 ----------
