@@ -1497,7 +1497,13 @@ function surgRows(){
       if (a > 0 && ta) parts.push([q[1], ta.surg, n > 0 && t[n] ? t[n].surg : 0, q[2]]);
       else if (a > 0) parts.push([q[1] + " · 가입금액 " + won(a) + " 지급표 확인", 0, 0, q[2], "chk"]); // 지급표에 없는 가입금액: 합계에서 빼고 표시만
     });
-    parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
+    // 다른 보험의 1~5종 수술비가 여러 건이면 한 칸으로 묶는다(캡틴 2026-11-22: 칸이 많아 장이 넘침)
+    var os = otherSurg(e), oj = os.filter(function(x){ return /^다른 보험 .*종 수술비/.test(x[0]); });
+    if (oj.length > 1) {
+      var star = oj.some(function(x){ return /※/.test(x[0]); });
+      os = os.filter(function(x){ return oj.indexOf(x) < 0; }).concat([["다른 보험 " + e.jong + "종 해당 수술비 " + oj.length + "건 합계" + (star ? "※" : ""), oj.reduce(function(s, x){ return s + x[1]; }, 0), oj.reduce(function(s, x){ return s + x[2]; }, 0)]]);
+    }
+    parts = parts.concat(os).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
   });
@@ -1819,9 +1825,37 @@ function fillGaps(){
     if (cw && cw.children.length === 1) cw.style.columnCount = 1; // 표가 하나만 남으면 오른쪽 칸이 비지 않게 전체 폭으로
     if (!ncw.children.length) { ncw.previousElementSibling.remove(); ncw.remove(); } // 표는 다 들어가고 아래 안내만 넘어온 쪽
   })(pg);
+  // 요약형 수술비 표: 넘치면 아래 줄부터 다음 쪽으로(다른 보험 수술비가 많을 때)
+  [].slice.call(document.querySelectorAll('#vSum .page')).forEach(function(pg){
+    var sg = pg.querySelector('.sg:not(.sgp)'), cur4 = pg, guard = 0;
+    while (sg && contentH0(cur4) > roomS() && sg.children.length > 1 && guard++ < 6) {
+      var np2 = document.createElement('div'); np2.className = 'page';
+      np2.innerHTML = cur4.querySelector('.ph').outerHTML + '<div class="st"><h2>🔪 수술 한 번 받으면 이만큼 (이어서)</h2></div><div class="sg"></div>' + cur4.querySelector('.pf').outerHTML;
+      cur4.parentNode.insertBefore(np2, cur4.nextSibling);
+      var ns2 = np2.querySelector('.sg');
+      while (contentH0(cur4) > roomS() && sg.children.length > 1) ns2.insertBefore(sg.lastElementChild, ns2.firstChild);
+      var nt = cur4.querySelector('.sg + .note'); if (nt && contentH0(cur4) > roomS()) ns2.after(nt);
+      cur4 = np2; sg = ns2;
+    }
+  });
   var pages = [].slice.call(document.querySelectorAll('#vSum .page'));
   pages.forEach(function(pg, i){ var s = pg.querySelector('.pf span:last-child'); if (s) s.textContent = (i + 1) + ' / ' + pages.length; });
   run(pages, fillers(false), roomS, '.pf');
+  // PT 수술비·상해 장: 다른 보험 담보가 많아 넘치면 아래 줄부터 '이어서' 장으로 넘긴다
+  (function splitSurg(){
+    [].slice.call(document.querySelectorAll('#stage .slide')).forEach(function(sl){
+      var sg = sl.querySelector('.sg.sgp'), guard = 0, cur3 = sl;
+      while (sg && contentH0(cur3) > roomP() && sg.children.length > 1 && guard++ < 6) {
+        var nx = document.createElement('div'); nx.className = 'slide';
+        nx.innerHTML = cur3.querySelector('.kick').outerHTML.replace(/<\/span>$|<\/div>$/, function(m){ return m; }) + '<div class="sg sgp"></div>' + (cur3.querySelector('.src') ? cur3.querySelector('.src').outerHTML : '');
+        var kk = nx.querySelector('.kick'); if (!/이어서/.test(kk.textContent)) kk.textContent = kk.textContent + ' (이어서)';
+        cur3.parentNode.insertBefore(nx, cur3.nextSibling);
+        var ns = nx.querySelector('.sg');
+        while (contentH0(cur3) > roomP() && sg.children.length > 1) ns.insertBefore(sg.lastElementChild, ns.firstChild);
+        cur3 = nx; sg = ns;
+      }
+    });
+  })();
   // PT 담보 카드: 넘치면 다음 장을 만들어 뒤 카드부터 넘긴다
   (function splitCards(){
     var first = document.querySelector('#stage .slide.cardpage');
