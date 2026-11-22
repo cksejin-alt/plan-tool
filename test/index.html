@@ -681,7 +681,7 @@
     <label class="t" for="lMsg">카톡으로 보낼 글 (고쳐서 쓰세요)</label><textarea id="lMsg"></textarea>
     <div class="len" id="lLen"></div>
     <div class="row"><button class="pri" id="lCopyMsg">글+링크 복사</button><button id="lCopy">링크만 복사</button></div>
-    <div class="row"><button id="lOpen">고객 화면 미리 보기</button><button id="lShare">휴대폰으로 공유</button></div>
+    <div class="row"><button id="lOpen">고객 화면 미리 보기</button><button id="lShare">📤 공유하기 (카톡·문자 고르기)</button></div>
   </div>
   <div class="msg" id="lMsgOk" role="status"></div>
 </div></div>
@@ -2555,7 +2555,7 @@ function linkBox(open){
   try { document.getElementById("lPhone").value = localStorage.getItem("planAgentPhone") || ""; } catch (e) {}
   try { document.getElementById("lKakao").value = localStorage.getItem("planAgentKakao") || ""; } catch (e) {}
   document.getElementById("lOut").hidden = true; document.getElementById("lMsgOk").textContent = "";
-  document.getElementById("lShare").hidden = !navigator.share;
+  var sb = document.getElementById("lShare"); sb.hidden = false; sb.disabled = !navigator.share; sb.title = navigator.share ? "" : "휴대폰에서 열면 눌러져요"; if (!navigator.share) sb.textContent = "📤 공유하기 (휴대폰에서 열면 눌러져요)";
 }
 function lSay(t, bad){ var o = document.getElementById("lMsgOk"); o.style.color = bad ? "var(--red)" : "#14532D"; o.textContent = t; }
 async function copyText(t){
