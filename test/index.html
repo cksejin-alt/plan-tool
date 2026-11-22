@@ -1556,7 +1556,7 @@ function renderPt(){
 
   // 2. 나이 통계 + 심장·뇌 범위
   var age = +d.age || 0, sex = d.sex === "여" ? "여" : "남", dec = Math.min(80, Math.max(50, Math.floor(age / 10) * 10)), nx = Math.min(80, dec + 10);
-  P.push('<div class="slide">' + kick(esc(d.customer) + ' 님' + (age ? ' ' + age + '세' : '') + ' · 공식 통계') + '<h2>왜 지금, 왜 <em>넓은 보장</em>일까요?</h2>'
+  var sStat = ('<div class="slide">' + kick(esc(d.customer) + ' 님' + (age ? ' ' + age + '세' : '') + ' · 공식 통계') + '<h2>왜 지금, 왜 <em>넓은 보장</em>일까요?</h2>'
     + '<div class="w2"><div><span>🎗️ 평생 암에 걸릴 확률 (' + sex + ')</span><b>' + STATS.cancerLifeWord[sex] + '</b><small>' + STATS.cancerLife[sex] + '</small></div>'
     + '<div><span>🧠 뇌졸중 ' + dec + '대 → ' + nx + '대</span><b>약 ' + (STATS.stroke[nx] / STATS.stroke[dec]).toFixed(1) + '배</b><small>10만 명당 ' + STATS.stroke[dec] + ' → ' + STATS.stroke[nx] + '건</small></div>'
     + '<div><span>🫀 사망원인</span><b>2위 심장</b><small>1위 암 · 4위 뇌혈관</small></div></div>'
@@ -1578,7 +1578,7 @@ function renderPt(){
   var rows = RANGES.checks.map(function(c){ var a = c.by.some(function(n){ return M.has(n, false); }), b = c.by.some(function(n){ return M.has(n, true); });
     return '<tr class="' + (!a && b ? 'gain' : '') + '"><td>' + esc(c.d) + '<small>' + esc(c.k) + '</small></td><td class="c">' + (M.d.noAna ? '–' : a ? '⭕' : '❌') + '</td><td class="c">' + (b ? '⭕' : '❌') + '</td></tr>'; });
   var half = Math.ceil(rows.length / 2);
-  P.push('<div class="slide">' + kick('보장 범위') + '<h2>좁은 담보를 <em>넓은 담보</em>가 감싸요</h2><p class="sub">회색 = 현재 가진 담보 · 빨강·보라 = 이번 제안</p><div class="rg3">' + rg + '</div>'
+  var sRange = ('<div class="slide">' + kick('보장 범위') + '<h2>좁은 담보를 <em>넓은 담보</em>가 감싸요</h2><p class="sub">회색 = 현재 가진 담보 · 빨강·보라 = 이번 제안</p><div class="rg3">' + rg + '</div>'
     + (d.noProp ? '<h3 class="h3">이런 병이면 받을 수 있나요? 지금 보험으로 <em>' + M.nNow + '가지</em></h3>' : '<h3 class="h3">이런 병이면 받을 수 있나요? 현재 <em style="color:var(--sub)">' + curN('가지') + '</em> → 제안 후 <em>' + M.nAft + '가지</em></h3>')
     + '<div class="ck3"><table class="ck2"><tr><th>병</th><th>현재</th><th>제안</th></tr>' + rows.slice(0, half).join('') + '</table><table class="ck2"><tr><th>병</th><th>현재</th><th>제안</th></tr>' + rows.slice(half).join('') + '</table></div>'
     + src('메리츠 약관 질병코드 기준 · 다른 회사 뇌졸중·급성심근경색 진단비는 범위가 조금 다를 수 있어요') + '</div>');
@@ -1609,27 +1609,38 @@ function renderPt(){
   });
   // 카드는 일단 한 장에 모두 넣고, 화면에 그린 뒤 실제 높이를 재서 넘치는 카드만 다음 장으로 보낸다(splitCards)
   d.groups.forEach(function(g){ g.items.forEach(function(it){ delete it._grouped; }); });
+  var sCards = [];
   if (M.grown.length) {
-    P.push('<div class="slide cardpage">' + kick('제안 담보 하나씩 보기 · 총 ' + M.grown.length + '개') + '<h2>이번에 <em>' + M.grown.length + '가지</em> 보장을 더해요</h2>'
+    sCards.push('<div class="slide cardpage">' + kick('제안 담보 하나씩 보기 · 총 ' + M.grown.length + '개') + '<h2>이번에 <em>' + M.grown.length + '가지</em> 보장을 더해요</h2>'
       + '<div class="rcs">' + cards.map(function(c){ return c.html; }).join('') + '</div>'
       + src('가입금액은 설계서 기준 · 🏥 = 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 · 실제 지급은 약관 기준') + '</div>');
   }
 
-  if (!M.grown.length && d.noProp && d.conList && d.conList.length) conSlides(kick, src).forEach(function(s){ P.push(s); });
-  P.push('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비 (심장·뇌혈관은 순환계 통합치료비 수술 금액까지) 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
-  P.push('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
-  // 5. 치료 예시 2개씩, 마지막 장에 확인사항
-  var js = M.js;
-  for (var i = 0; i < js.length; i += 2) {
-    var last = i + 2 >= js.length, body = jblock(js[i]) + (js[i + 1] ? jblock(js[i + 1]) : '');
-    P.push('<div class="slide">' + kick('이렇게 치료받으면, 이만큼 받아요 (' + (i / 2 + 1) + '/' + Math.ceil(js.length / 2) + ')') + body
-      + src('🏥 보라색 = 상급종합병원이라서 더 나오는 돈 · 회색 = 현재 보험 · 입원일당은 2·3인실 기준 · 실손의료비는 따로') + '</div>');
-  }
+  var sCon = (!M.grown.length && d.noProp && d.conList && d.conList.length) ? conSlides(kick, src) : [];
+  var sSurg = ('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비 (심장·뇌혈관은 순환계 통합치료비 수술 금액까지) 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
+  var sInj = ('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
+  // 5. 장 순서(캡틴 2026-11-22): 표지 → 암 치료 예시 → 뇌·심장(통계·범위·치료 예시) → 수술비·상해 → 간병인 → 마무리 → 제안 담보 하나씩 보기(맨 끝)
+  var jsC = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) < 0; }), jsB = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) >= 0; });
+  var jSlides = function(arr, label){
+    for (var i = 0; i < arr.length; i += 2) {
+      var body = jblock(arr[i]) + (arr[i + 1] ? jblock(arr[i + 1]) : '');
+      P.push('<div class="slide">' + kick(label + (arr.length > 2 ? ' (' + (i / 2 + 1) + '/' + Math.ceil(arr.length / 2) + ')' : '')) + body
+        + src('🏥 보라색 = 상급종합병원이라서 더 나오는 돈 · 회색 = 현재 보험 · 입원일당은 2·3인실 기준 · 실손의료비는 따로') + '</div>');
+    }
+  };
+  jSlides(jsC, '암 치료받으면, 이만큼 받아요');
+  P.push(sStat); P.push(sRange);
+  jSlides(jsB, '뇌·심장 치료받으면, 이만큼 받아요');
+  P.push(sSurg); P.push(sInj);
+  P.push('<div class="slide">' + kick('간병인') + '<h2>간병인 비용은 <em>실손보험에서 안 나와요</em></h2><p class="sub">입원해서 간병인을 쓰면 하루 정해진 금액을 받거나, 회사가 간병인을 보내 주는 보장이에요.</p>'
+    + careBox().replace(/^<div class="st">[\s\S]*?<\/div>/, '') + src('하루 금액 · 가입 후 · 실제 지급 조건은 약관 기준') + '</div>');
+  sCon.forEach(function(s){ P.push(s); });
   // 마무리 장: 확인사항 + 보장 시작 시점 + 자주 묻는 질문 + 다음 단계 (빈 곳 채우기 블록 중 0·2·끝 번을 여기서 고정 사용)
   var fx = fillers(true);
   P.push('<div class="slide">' + kick('마무리') + '<h2>함께 <em>확인할 점</em></h2>'
     + '<div class="chk" style="font-size:17px;line-height:1.9">✔ 🏥 표시 담보는 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 나와요<br>✔ 비급여 전용 담보는 건강보험이 되는 급여 치료엔 나오지 않아요<br>✔ 통합치료비는 한 해 가입금액까지 나와요<br>✔ 모든 금액은 예시이며 실제 지급은 약관과 심사 기준을 따라요</div>'
     + fx[0] + fx[2] + fx[fx.length - 1] + '</div>');
+  sCards.forEach(function(s){ P.push(s); });
 
   SL = P; if (cur >= SL.length) cur = SL.length - 1;
   var stage = document.getElementById("stage");
