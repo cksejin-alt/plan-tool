@@ -17,6 +17,9 @@
   .bar{position:sticky;top:0;z-index:20;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 16px;background:rgba(244,244,246,.94);backdrop-filter:blur(6px)}
   .bar button{border:0;border-radius:999px;padding:9px 16px;font:700 14px Pretendard,sans-serif;cursor:pointer;background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .bar button.on{background:var(--ink);color:#fff}
+  .bar #bList{display:inline-flex;align-items:center;gap:8px} .bar #bList b{min-width:30px;text-align:left;color:var(--sub)} .bar #bList.swOn b{color:#16A34A}
+  .bar #bList .sw{position:relative;width:40px;height:22px;border-radius:99px;background:#D1D5DB;transition:background .25s} .bar #bList .sw i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .25s cubic-bezier(.16,1,.3,1)}
+  .bar #bList.swOn .sw{background:#16A34A} .bar #bList.swOn .sw i{left:21px}
   .bar button.pri{background:var(--red);color:#fff}
   .view{display:none} .view.on{display:block}
 
@@ -1817,7 +1820,7 @@ function fillGaps(){
 }
 // 요약형·PT형의 제안 담보 목록 보이기/숨기기 (캡틴 2026-11-22). 마지막 선택을 이 브라우저에 기억
 var SHOW_LIST = true; try { SHOW_LIST = localStorage.getItem("planShowList") !== "0"; } catch (e) {}
-function listBtn(){ var b = document.getElementById("bList"); if (!b) return; b.classList.toggle("on", SHOW_LIST); b.textContent = SHOW_LIST ? "📋 담보 목록 보이기 ON" : "📋 담보 목록 숨김 OFF"; }
+function listBtn(){ var b = document.getElementById("bList"); if (!b) return; b.classList.toggle("swOn", SHOW_LIST); b.setAttribute("aria-pressed", SHOW_LIST ? "true" : "false"); b.innerHTML = '📋 담보 목록 <span class="sw" aria-hidden="true"><i></i></span><b>' + (SHOW_LIST ? "ON" : "OFF") + '</b>'; }
 function renderAll(){ compute(); renderSum(); renderPt(); fillGaps(); }
 function panel(open){ document.getElementById("panel").classList.toggle("open", open); }
 function buildForm(){
@@ -2291,7 +2294,7 @@ document.getElementById("pGo").onclick = pdfBuild;
 document.getElementById("bPdf").onclick = function(){ pdfBox(true); };
 document.getElementById("bSum").onclick = function(){ setView("sum"); };
 document.getElementById("bPt").onclick = function(){ setView("pt"); };
-document.getElementById("bList").onclick = function(){ SHOW_LIST = !SHOW_LIST; try { localStorage.setItem("planShowList", SHOW_LIST ? "1" : "0"); } catch (e) {} listBtn(); renderAll(); };
+document.getElementById("bList").addEventListener("click", function(){ SHOW_LIST = !SHOW_LIST; try { localStorage.setItem("planShowList", SHOW_LIST ? "1" : "0"); } catch (e) {} listBtn(); try { renderAll(); } catch (e) { console.error(e); } });
 listBtn();
 document.getElementById("bEdit").onclick = function(){ panel(!document.getElementById("panel").classList.contains("open")); };
 document.getElementById("bPrint").onclick = function(){ if (cutBlocked()) return; window.print(); };
