@@ -425,6 +425,30 @@
   .cv .cvg.in .grw .mb i{transform:scaleX(var(--v))}
   .cv .cvg .fn{margin:14px 0 0;font-size:12px;color:var(--cm)}
   @media (max-width:880px){ .cv .chg{grid-template-columns:1fr} }
+  /* 간병인 구역 */
+  .cv .cgw{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:start}
+  .cv .cgvs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px}
+  .cv .cgv{border-radius:22px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .cv .cgv span{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600} .cv .cgv span iconify-icon{font-size:18px}
+  .cv .cgv b{display:block;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.03em;margin:8px 0 2px;line-height:1.1}
+  .cv .cgv small{font-size:12px;opacity:.8}
+  .cv .cgv.no{background:#fff;box-shadow:inset 0 0 0 1px var(--cl);color:var(--cs)} .cv .cgv.no b{color:var(--cm);position:relative;display:inline-block}
+  .cv .cgv.no b:after{content:"";position:absolute;left:-4px;right:-4px;top:52%;height:3px;border-radius:3px;background:var(--cr);transform:scaleX(0);transform-origin:0 50%;transition:transform .9s var(--ez) .9s}
+  .cv .in .cgv.no b:after,.cv .cgvs.in .cgv.no b:after{transform:scaleX(1)}
+  .cv .cgv.yes{background:linear-gradient(135deg,#D6334C,#B5223A);color:#fff;box-shadow:0 20px 40px -20px rgba(214,51,76,.6)}
+  .cv .cgv.yes:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.2) 50%,transparent 65%);transform:translateX(-120%);animation:cvSheen 5s var(--ez) 2s infinite}
+  .cv .cgl .lbl{display:flex;align-items:center;gap:8px;color:var(--cs);font-size:14px;margin:0 0 10px;font-weight:600;flex-wrap:wrap} .cv .cgl .lbl iconify-icon{color:var(--cr);font-size:18px}
+  .cv .cgl ul{list-style:none;margin:0;padding:0}
+  .cv .cgl li{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--cl);opacity:0;transform:translateY(10px);transition:opacity .7s var(--ez),transform .7s var(--ez);transition-delay:calc(.4s + var(--k) * 110ms)}
+  .cv .cgl.in li{opacity:1;transform:none}
+  .cv .cgl .ci{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(214,51,76,.08);color:var(--cr);font-size:20px}
+  .cv .cgl .cn{min-width:0} .cv .cgl .cn b{display:block;font-size:15px;word-break:keep-all} .cv .cgl .cn small{display:block;color:var(--cm);font-size:12px;margin-top:2px}
+  .cv .cgl em{font-style:normal;font-weight:700;color:var(--ci);text-align:right;white-space:nowrap;font-size:15px}
+  .cv .cgl em i{display:block;font-style:normal;font-size:11px;color:var(--cr);font-weight:700}
+  .cv .cgl .cg0{display:flex;gap:10px;align-items:flex-start;background:#FFF5F6;color:#9F1D33;border-radius:16px;padding:16px;font-size:14.5px} .cv .cgl .cg0 iconify-icon{font-size:20px;flex:none}
+  .cv .cgl .fn{margin:14px 0 0;font-size:12px;color:var(--cm)}
+  @media (max-width:880px){ .cv .cgw{grid-template-columns:1fr;gap:28px} }
+  @media (prefers-reduced-motion:reduce){ .cv .cgl li{opacity:1;transform:none} .cv .cgv.no b:after{transform:scaleX(1)} .cv .cgv.yes:after{animation:none} }
   @media (max-width:360px){ .cv .rcp .paper{padding:24px 16px 22px} .cv .rcp .row{font-size:14.5px} .cv .rcp .row b{font-size:15.5px} .cv .rcp .row .dot{display:none} .cv .rcp .tot{padding:18px} .cv .cvg .big>b{font-size:44px} }
   @media (prefers-reduced-motion:reduce){ .cv .rcp .paper{clip-path:none} .cv .rcp .row,.cv .rcp .tot,.cv .cvg .grw>div{opacity:1;transform:none} .cv .cvg .dots i,.cv .cvg .big .pl{transform:none} .cv .cvg .grw .mb i{transform:scaleX(var(--v))} .cv .rcp .tot:after,.cv .chgS .orb,.cv .rcp .say .ar,.cv .cvg .big .to{animation:none} }
   .cv [data-r]{opacity:0;transform:translateY(2rem);filter:blur(4px);transition:opacity 1s var(--ez),transform 1s var(--ez),filter 1s var(--ez);transition-delay:calc(var(--i,0) * 80ms)}
@@ -2464,6 +2488,19 @@ function renderCust(){
       + '<div class="r"><b class="n">' + won(r.tot) + '</b>' + (np ? '' : '<span>지금 ' + curW(r.now) + '</span>') + '</div><div class="trk"><i class="fill red" style="--v:' + (r.tot / smx).toFixed(3) + '"></i></div></div>'; });
     h += '</div></div></section>';
   }
+  // 간병인 (캡틴 요청 2026-11-22): 간병인 비용은 실손보험에서 보상하지 않는다는 점 + 지금·제안 간병인 담보
+  var cgs = M.all.map(function(it){ var p = careParse(it.n), v = (+it.now || 0) + (+it.add || 0); return p && v > 0 ? { it: it, p: p, v: v, svc: !!it.svc || (p.kind === "sup" && v < 1) } : null; }).filter(Boolean);
+  var cgNew = cgs.filter(function(x){ return +x.it.add > 0; }).length, cgPer = { "30": "1~30일", "180": "1~180일", "181": "181일부터", "": "" };
+  h += '<section class="sec cgS" id="cvCare"><div class="w cgw"><div data-r><span class="eyebrow"><i></i>간병인</span><h2>간병인 비용은<br><span class="mut">실손보험에서</span><br>나오지 않아요</h2>'
+     + '<p class="desc">입원해서 간병인을 쓰면 하루 비용이 꽤 들어요. 그런데 간병인 비용은 실손보험이 보상하지 않는 항목이라 1원도 나오지 않아요. 간병인 보장이 따로 있어야 받을 수 있어요.</p>'
+     + '<div class="cgvs" data-r style="--i:1"><div class="cgv no"><span>' + ico("hospital-bold-duotone") + '실손보험</span><b class="n">0원</b><small>간병인 비용은 보상하지 않아요</small></div>'
+     + '<div class="cgv yes"><span>' + ico("shield-check-bold-duotone") + '간병인 보장</span><b>' + (cgs.length ? '하루 정해진 금액' : '없어요') + '</b><small>' + (cgs.length ? '입원한 날만큼 받아요' : '지금은 받을 수 있는 담보가 없어요') + '</small></div></div></div>'
+     + '<div class="bz cgl" data-r style="--i:2"><div class="core"><p class="lbl">' + ico("user-heart-bold-duotone") + (np ? '지금 가진 간병인 보장' : '제안 후 간병인 보장') + (cgNew && !np ? ' · <b style="color:var(--cr)">' + cgNew + '가지 새로·더</b>' : '') + '</p>'
+     + (cgs.length ? '<ul>' + cgs.map(function(x, k){ var nm = x.it.n.replace(/\(통합간편가입\)|\s*\(.*?\)\s*$/g, '').trim();
+         return '<li style="--k:' + k + '"><span class="ci">' + ico(x.p.kind === "sup" ? "users-group-rounded-bold-duotone" : "user-hand-up-bold-duotone") + '</span><span class="cn"><b>' + esc(nm) + '</b><small>' + (x.p.who === "inj" ? '다쳐서' : '병으로') + ' 입원 · ' + (x.p.kind === "sup" ? '회사가 간병인을 보내 줘요' : x.p.kind === "nis" ? '간호·간병통합병동 입원' : '간병인을 쓰면 하루 금액') + (cgPer[x.p.per] ? ' · ' + cgPer[x.p.per] : '') + '</small></span>'
+           + '<em class="n">' + (x.svc ? '간병인 지원' : '하루 ' + won(x.v)) + (!np && +x.it.add > 0 ? '<i>' + (+x.it.now > 0 ? '늘어남' : '새로') + '</i>' : '') + '</em></li>'; }).join('') + '</ul>'
+       : '<div class="cg0">' + ico("danger-triangle-bold-duotone") + '<span>간병인 보장이 없어요. 입원해서 간병인을 쓰면 그 비용은 모두 본인이 내야 해요.</span></div>')
+     + '<p class="fn">실제 지급 조건(입원 기간, 병원 종류)은 약관을 따라요. 간병인 지원일당은 회사가 간병인을 보내 주는 방식이에요.</p></div></div></div></section>';
   // 보장 범위 고리
   var ck = RANGES.checks, nT = ck.length, R1 = 140, R2 = 112, L = 2 * Math.PI * R1, L2 = 2 * Math.PI * R2, nA = np ? M.nNow : M.nAft, nN = d.noAna ? 0 : M.nNow;
   h += '<section class="sec tint"><div class="w rng"><div data-r><span class="eyebrow"><i></i>보장 범위</span><h2>뇌·심장은<br><span class="mut">병 이름이</span> 넓어야<br>받아요</h2>'
