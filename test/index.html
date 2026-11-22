@@ -689,6 +689,7 @@
   <button id="bSum" class="on">① 요약형</button>
   <button id="bPt">② PT형 (발표)</button>
   <button id="bEdit">숫자 고치기</button>
+  <button id="bList" title="요약형·PT형에 제안 담보 목록을 넣을지 정해요">📋 담보 목록 보이기</button>
   <button class="pri" id="bPrint">인쇄 · PDF 저장</button>
   <button class="pri" id="bLink">🔗 고객에게 보낼 링크</button>
 </div>
@@ -1512,7 +1513,8 @@ function renderSum(){
   // 긴 분야는 나눠야 두 칸 높이가 맞아 왼쪽·오른쪽에 공란이 생기지 않는다
   var glChunks = [];
   gl.forEach(function(x){ for (var ci = 0; ci < x.rows.length; ci += 8) glChunks.push({ g: ci ? { icon: x.g.icon, name: x.g.name + ' (이어서)' } : x.g, rows: x.rows.slice(ci, ci + 8) }); });
-  if (M.grown.length) h += '<div class="st"><h2>📋 이번에 제안하는 담보 ' + M.grown.length + '가지</h2><small>가입금액 · 지급 방식</small></div><div class="colwrap">' + glChunks.map(function(x){ return tbl([x]); }).join('') + '</div>';
+  if (M.grown.length && !SHOW_LIST) {} // 캡틴 버튼으로 담보 목록을 끈 경우
+  else if (M.grown.length) h += '<div class="st"><h2>📋 이번에 제안하는 담보 ' + M.grown.length + '가지</h2><small>가입금액 · 지급 방식</small></div><div class="colwrap">' + glChunks.map(function(x){ return tbl([x]); }).join('') + '</div>';
   else if (d.noProp && d.conList && d.conList.length) h += conSection();
   h += covCharts();
   h += '<div class="warn"><b>꼭 확인해 주세요</b> · 🏥는 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 나와요. · 가입 후 90일·1년 안에는 줄어드는 담보가 있어요.</div>';
@@ -1610,7 +1612,7 @@ function renderPt(){
   // 카드는 일단 한 장에 모두 넣고, 화면에 그린 뒤 실제 높이를 재서 넘치는 카드만 다음 장으로 보낸다(splitCards)
   d.groups.forEach(function(g){ g.items.forEach(function(it){ delete it._grouped; }); });
   var sCards = [];
-  if (M.grown.length) {
+  if (M.grown.length && SHOW_LIST) {
     sCards.push('<div class="slide cardpage">' + kick('제안 담보 하나씩 보기 · 총 ' + M.grown.length + '개') + '<h2>이번에 <em>' + M.grown.length + '가지</em> 보장을 더해요</h2>'
       + '<div class="rcs">' + cards.map(function(c){ return c.html; }).join('') + '</div>'
       + src('가입금액은 설계서 기준 · 🏥 = 상급종합병원(암은 암중점치료기관 포함)에서 치료할 때 · 실제 지급은 약관 기준') + '</div>');
@@ -1813,6 +1815,9 @@ function fillGaps(){
   vs.classList.toggle("on", sOn); vp.classList.toggle("on", pOn);
   showSlide(cur);
 }
+// 요약형·PT형의 제안 담보 목록 보이기/숨기기 (캡틴 2026-11-22). 마지막 선택을 이 브라우저에 기억
+var SHOW_LIST = true; try { SHOW_LIST = localStorage.getItem("planShowList") !== "0"; } catch (e) {}
+function listBtn(){ var b = document.getElementById("bList"); if (!b) return; b.classList.toggle("on", SHOW_LIST); b.textContent = SHOW_LIST ? "📋 담보 목록 보이기 ON" : "📋 담보 목록 숨김 OFF"; }
 function renderAll(){ compute(); renderSum(); renderPt(); fillGaps(); }
 function panel(open){ document.getElementById("panel").classList.toggle("open", open); }
 function buildForm(){
@@ -2286,6 +2291,8 @@ document.getElementById("pGo").onclick = pdfBuild;
 document.getElementById("bPdf").onclick = function(){ pdfBox(true); };
 document.getElementById("bSum").onclick = function(){ setView("sum"); };
 document.getElementById("bPt").onclick = function(){ setView("pt"); };
+document.getElementById("bList").onclick = function(){ SHOW_LIST = !SHOW_LIST; try { localStorage.setItem("planShowList", SHOW_LIST ? "1" : "0"); } catch (e) {} listBtn(); renderAll(); };
+listBtn();
 document.getElementById("bEdit").onclick = function(){ panel(!document.getElementById("panel").classList.contains("open")); };
 document.getElementById("bPrint").onclick = function(){ if (cutBlocked()) return; window.print(); };
 document.getElementById("prev").onclick = function(){ showSlide(cur - 1); };
