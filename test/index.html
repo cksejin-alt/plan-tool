@@ -1061,13 +1061,15 @@ var RANGES = {
 
 // 수술 한 번에 함께 나오는 수술비 (약관 확인 2026-11-01: 수술비Ⅱ 1~5종·질병/상해수술비·상급종합 수술비·130대질병수술비 모두 수술 1회당)
 var SURG130 = { "특정31대": 500, "심장질환": 100, "뇌혈관질환": 100, "다빈도61대": 50, "편도염": 50, "백내장": 30, "관절염·생식기": 30, "후각특정질환": 30, "치핵": 20, "특정다빈도29대": 20, "유방의 장애": 10 };
+// 질병 예시의 종·대상은 2610 약관으로 확인(캡틴 2026-11-23): 별표38(1-5종) · 별표22(5대질환) · 별표21(32대) · 별표45(특정31대) · 별표29(1-7종)
+// isch: 허혈성심장질환(I20~I25) · bleed: 뇌출혈(I60~I62)이면 · d5: 5대질환(심장·뇌혈관·간·폐)이자 32대의 5대질병 · op: 관혈/비관혈 · s7: 1-7종 수술분류 · ex56: 질병수술비(특정5대·6대질병 제외)에서 빠지는 병
 var SURG_EX = [
-  { k: "질병", t: "특정31대 질병으로 큰 수술", ex: "대동맥류·간질환·폐질환·신부전 등", jong: 5, c130: "특정31대" },
-  { k: "질병", t: "심장질환 수술", ex: "약관 심장질환 분류표의 병", jong: 4, c130: "심장질환" },
-  { k: "질병", t: "뇌혈관질환 수술", ex: "뇌동맥류·뇌출혈 등", jong: 5, c130: "뇌혈관질환" },
-  { k: "질병", t: "다빈도 질병 수술", ex: "양성종양·갑상선질환·축농증 등", jong: 3, c130: "다빈도61대" },
-  { k: "질병", t: "편도염 수술", ex: "자주 하는 수술", jong: 2, c130: "편도염" },
-  { k: "질병", t: "백내장 수술", ex: "나이 들면 흔한 수술", jong: 1, c130: "백내장" },
+  { k: "질병", t: "간 질환 큰 수술", ex: "배를 열고 간을 잘라 내는 수술(특정31대·5대질환)", jong: 4, c130: "특정31대", d5: 1, op: "관혈" },
+  { k: "질병", t: "협심증·심근경색 스텐트 시술", ex: "혈관에 관을 넣어 넓히는 시술(카테터)", jong: 3, c130: "심장질환", isch: 1, d5: 1, op: "비관혈" },
+  { k: "질병", t: "뇌출혈·뇌동맥류 수술", ex: "머리를 열고 하는 수술(개두술)", jong: 5, c130: "뇌혈관질환", bleed: 1, d5: 1, op: "관혈" },
+  { k: "질병", t: "갑상선 결절 수술", ex: "갑상선을 여는 수술(다빈도 질병)", jong: 3, c130: "다빈도61대", op: "관혈" },
+  { k: "질병", t: "편도 절제 수술", ex: "편도염으로 편도를 떼어 냄", jong: 1, c130: "편도염", s7: 1 },
+  { k: "질병", t: "백내장 수술", ex: "나이 들면 흔한 수술", jong: 1, c130: "백내장", s7: 1, ex56: 1 },
   // 상해: 약관 별표38(1-5종 수술분류표Ⅱ) — 사지골·사지관절 관혈수술 2종, 근·건·인대·연골 관혈수술 1종, 척추·골반 관혈수술 3종
   // frac: 골절 진단비가 함께 나오는 예시, nf: 신골절치료비 지급률(별표39, 수술한 골절/그 외)
   { k: "상해", t: "손목 골절 수술", ex: "넘어지며 손을 짚다 부러짐", jong: 2, frac: 1, nf: 18 },
@@ -1263,6 +1265,21 @@ function careTerm(n){
 }
 // 신골절치료비: 약관 별표39 지급률(2026-10-27 분석,  2_자료/회사자료/신골절치료비_분석.md)
 // 자동차사고변호사선임비용(Ⅲ)(변호사선임현물급부선택가능): 캡틴 캡처 약관(2026-11-17) 기준 — 1사고마다 가입금액 한도로 비용을 주거나 변호사 선임을 현물로 제공
+// 수술비 특약 지급 조건 (통합간편건강보험2610 약관, 캡틴 2026-11-23 '수술비 특약 전부 학습')
+function surgTerm(n){
+  var s = String(n).replace(/\s/g, ""), cut = /감액/.test(s) ? "" : " · 가입 1년 안 50%", m;
+  if (/^종합병원질병수술비/.test(s)) return { when: "병으로 종합병원(의료법상 종합병원 · 상급종합병원도 포함)에서 수술하면 가입금액", note: "같은 때 여러 수술은 1번" + cut };
+  if (/^종합병원상해수술비/.test(s)) return { when: "다쳐서 종합병원(의료법상 종합병원 · 상급종합병원도 포함)에서 수술하면 가입금액", note: "같은 상해로 여러 수술은 1번" };
+  if (/^골절(\(치아파절제외\))?수술비Ⅱ/.test(s)) return { when: "다쳐서 약관 골절분류표의 골절" + (/치아파절제외/.test(s) ? "(치아 파절 제외)" : "") + "로 수술하면 가입금액", note: "같은 상해로 여러 골절 수술은 1번" };
+  if ((m = s.match(/^질병수술비\(특정(\d)대질병제외\)/))) return { when: "병으로 수술하면 가입금액 (특정" + m[1] + "대질병은 제외: " + (m[1] === "2" ? "티눈·다래끼·결막염·외이염·귀 통증" : "백내장·비염·코용종·피부낭·티눈·혈관종" + (m[1] === "6" ? "·다래끼·결막염·외이염·귀 통증" : "") + " · 대장용종 내시경 절제") + ")", note: "같은 때 여러 수술은 1번" + cut };
+  if (/뇌출혈수술비/.test(s)) return { when: "뇌출혈(I60~I62)로 수술하면 수술 1회당 가입금액", note: cut ? "가입 1년 안 50%" : "감액 없음" };
+  if (/뇌혈관질환수술비/.test(s)) return { when: "뇌혈관질환(I60~I69)으로 수술하면 수술 1회당 가입금액", note: cut ? "가입 90일 안 10% · 1년 안 50%" : "감액 없음" };
+  if (/허혈성심장질환수술비/.test(s)) return { when: "허혈성심장질환(협심증·심근경색 등 I20~I25)으로 수술하면 수술 1회당 가입금액", note: cut ? "가입 90일 안 10% · 1년 안 50% · 스텐트 같은 카테터 시술도 수술" : "감액 없음" };
+  if (/5대질환.*수술비/.test(s)) return { when: "5대질환(심장·뇌혈관·간·폐 질환 등)으로 수술하면 질병마다 관혈·비관혈 각각 연 1회 가입금액", note: "관혈 = 피부를 열고 하는 수술 · 비관혈 = 내시경·카테터 등" + cut };
+  if (/\d+대질병관혈수술비/.test(s)) return { when: "32대질병(5대·9대·14대·4대 질병)으로 관혈수술하면 질병마다 연 1회 가입금액", note: "내시경·카테터 같은 비관혈 수술은 안 나와요" + cut };
+  if (/1-7종/.test(s) && /수술/.test(s)) return { when: "약관 1-7종 수술분류표(별표29)의 수술을 받으면 종별 가입금액 (한 해 3회까지)", note: "종은 수술 코드마다 정해져 있어요 · 편도·백내장은 1종" };
+  return null;
+}
 function isLawyerHyun(n){ var s = String(n).replace(/\s/g, ""); return /변호사/.test(s) && /현물/.test(s); }
 function lawyerHyunNow(){ return ((M.d && M.d.conList) || []).some(function(c){ return c.rows && c.rows.some(function(r){ return isLawyerHyun(r.n + "|" + r.sig); }); }); }
 function lawyerTerm(n){
@@ -1486,13 +1503,35 @@ function surgRows(){
         if (hit) out.push(["지금 보험 " + m[1] + "대 질병수술비(" + cat + ")", +r.amt, +r.amt]);
       }
       if (e.k === "질병" && e.c130 === "뇌혈관질환" && /뇌혈관질환수술/.test(nm)) out.push(["뇌혈관질환 수술비", +r.amt, +r.amt]);
-      if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? "허혈성심장질환 수술비(허혈성이면)" : "심장질환 수술비", +r.amt, +r.amt]);
+      if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? (e.isch ? "허혈성심장질환 수술비" : "허혈성심장질환 수술비(허혈성이면)") : "심장질환 수술비", +r.amt, +r.amt]);
     });
     return out;
   };
+  // 제안 설계서의 그 밖의 수술비 특약 (2610 약관 확인 2026-11-23). 지금 가입분은 위 otherSurg가 보장분석에서 센다.
+  var propSurg = function(e){
+    var out = [];
+    M.all.forEach(function(it){
+      var a = +it.add || 0, nm = String(it.n || "").replace(/\s/g, ""), m;
+      if (!(a > 0) || /^(질병|상해) \d종 수술비$/.test(it.n)) return;
+      if (e.k === "질병") {
+        if (/^종합병원질병수술비/.test(nm)) out.push(["🏥 종합병원 질병수술비", a, 0, 1]);
+        else if ((m = nm.match(/^질병수술비\(특정(\d)대질병제외\)/))) { if (!(e.ex56 && /[56]/.test(m[1])) && !PROP_MAP.some(function(p){ return p[0].test(nm); })) out.push(["질병수술비(특정" + m[1] + "대질병 제외)", a, 0]); }
+        else if (/뇌출혈수술비/.test(nm)) { if (e.bleed) out.push(["뇌출혈수술비(뇌출혈이면)", a, 0]); }
+        else if (/뇌혈관질환수술비/.test(nm)) { if (e.c130 === "뇌혈관질환") out.push(["뇌혈관질환 수술비", a, 0]); }
+        else if (/허혈성심장질환수술비/.test(nm)) { if (e.isch) out.push(["허혈성심장질환 수술비", a, 0]); }
+        else if (/5대질환.*수술비/.test(nm)) { var nb = /비관혈/.test(nm), hb = /관혈/.test(nm); if (e.d5 && (!hb || (nb ? e.op === "비관혈" : e.op === "관혈"))) out.push(["5대질환 수술비" + (hb ? (nb ? "(비관혈)" : "(관혈)") : ""), a, 0]); }
+        else if ((m = nm.match(/(\d+)대질병관혈수술비/))) { if (e.d5 && e.op === "관혈") out.push(m[1] === "5" ? ["32대질병 관혈수술비(5대질병)", a, 0] : m[1] === "32" ? ["32대질병 관혈수술비 · 세부 금액 확인", 0, 0, 0, "chk"] : null); }
+        else if (/1-7종/.test(nm) && !/상해/.test(nm)) { if (e.s7) { m = nm.match(/1-7종.*?(\d)종/); out.push(m ? (+m[1] === e.s7 ? ["1-7종 수술비(" + m[1] + "종)", a, 0] : null) : ["1-7종 수술비 · " + e.s7 + "종 금액 확인", 0, 0, 0, "chk"]); } }
+      } else if (e.jong) {
+        if (/^종합병원상해수술비/.test(nm)) out.push(["🏥 종합병원 상해수술비", a, 0, 1]);
+        else if (e.frac && /^골절(\(치아파절제외\))?수술비Ⅱ/.test(nm)) out.push(["골절 수술비", a, 0]);
+      }
+    });
+    return out.filter(Boolean);
+  };
   return SURG_EX.map(function(e){
     var parts = e.k === "질병"
-      ? [[e.jong + "종 수술비", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130대(" + e.c130 + ")", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["질병수술비", tv("질병 수술비"), tn("질병 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
+      ? [[e.jong + "종 수술비", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130대(" + e.c130 + ")", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["질병수술비", tv("질병 수술비") - (e.ex56 ? +(M.byName["질병 수술비"] || {}).ex56 || 0 : 0), tn("질병 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
       : (e.jong ? [[e.jong + "종 수술비", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["상해수술비", tv("상해 수술비"), tn("상해 수술비")], ["🏥 상급종합 수술비", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]] : [])
         .concat(e.frac ? [["골절 진단비", fracDx(tv), fracDx(tn)]] : [])
         .concat(e.nf ? [["신골절치료비 " + e.nf + "%", newFrac(tv) * e.nf / 100, newFrac(tn) * e.nf / 100]] : []);
@@ -1510,7 +1549,7 @@ function surgRows(){
       var star = oj.some(function(x){ return /※/.test(x[0]); });
       os = os.filter(function(x){ return oj.indexOf(x) < 0; }).concat([["다른 보험 " + e.jong + "종 해당 수술비 " + oj.length + "건 합계" + (star ? "※" : ""), oj.reduce(function(s, x){ return s + x[1]; }, 0), oj.reduce(function(s, x){ return s + x[2]; }, 0)]]);
     }
-    parts = parts.concat(os).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
+    parts = parts.concat(propSurg(e), os).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
   });
@@ -1687,7 +1726,7 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || cycTerm(it.n) || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || surgTerm(it.n) || cycTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : '이 가입금액의 항목별 금액은 약관 지급표로 확인해 주세요.'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(g.name) + '</span>' + payTag(it.n) + '</div>'
@@ -1707,7 +1746,7 @@ function renderPt(){
   }
 
   var sCon = (!M.grown.length && d.noProp && d.conList && d.conList.length) ? conSlides(kick, src) : [];
-  var sSurg = ('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">1~5종 수술비 + 130대 질병수술비 + 질병·상해수술비 + 상급종합병원 수술비 (심장·뇌혈관은 순환계 통합치료비 수술 금액까지) 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
+  var sSurg = ('<div class="slide">' + kick('수술비') + '<h2>수술 한 번에 <em>이만큼</em> 받아요</h2><p class="sub">그 수술에 나오는 수술비 특약(1~5종·130대·질병수술비·상급종합/종합병원·5대질환·뇌혈관/심장 수술비 등, 심장·뇌혈관은 순환계 통합치료비 수술 금액까지)을 모두 더한 금액</p>' + surgTable(true, "질병") + src('종(1~5종)은 약관 수술분류표 기준이에요. 실제 수술의 종은 수술마다 달라요 · 가입 1년 이후 · 한 해 수술이 2번 이상이면 가장 높은 종 기준으로 plus 수술비가 연 1회 더 나와요(첫 수술엔 안 나와요)') + '</div>');
   var sInj = ('<div class="slide">' + kick('상해·골절') + '<h2>다치면 <em>이만큼</em> 받아요</h2><p class="sub">자주 있는 상해 수술 · 골절 진단비 · 신골절치료비를 모두 더한 금액</p>' + surgTable(true, "상해") + src('종(1~5종)은 약관 수술분류표 기준(팔·다리뼈 관혈수술 2종, 인대·힘줄 1종, 척추·골반 3종) · 골절 진단비·신골절치료비는 1사고당 · 신골절치료비 %는 약관 지급률표(수술한 골절/그 외) · 실제 지급은 약관 기준') + '</div>');
   // 5. 장 순서(캡틴 2026-11-22): 표지 → 암 치료 예시 → 뇌·심장(통계·범위·치료 예시) → 수술비·상해 → 간병인 → 마무리 → 제안 담보 하나씩 보기(맨 끝)
   var jsC = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) < 0; }), jsB = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) >= 0; });
@@ -2170,12 +2209,13 @@ function buildFromPdf(ana, prop, who){
     for (var i = 0; i < PROP_MAP.length; i++) if (PROP_MAP[i][0].test(nm)) {
       var it = byN[PROP_MAP[i][1]];
       if (PROP_MAP[i][2]) it.add = Math.max(+it.add || 0, x.amt); else { it.add = (+it.add || 0) + x.amt; (it.parts = it.parts || []).push(x.amt); }
+      if (/특정[56]대질병제외/.test(nm.replace(/\s/g, ""))) it.ex56 = (+it.ex56 || 0) + x.amt; // 백내장 등은 이 담보에서 빠짐(수술 예시에서 뺀다)
       if (!it.rider) { it.rider = nm; it.unv = !TERMS[nm]; }
       if (renew) it.renew = 1;
       matched++; return;
     }
     var sp = /다빈치로봇암수술비\(특정암\)/.test(nm);
-    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, renew: renew, unv:!sp && !fracTerm(nm) && !lawyerTerm(nm) });
+    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, renew: renew, unv:!sp && !fracTerm(nm) && !lawyerTerm(nm) && !surgTerm(nm) });
   });
   var i130 = byN["130대 질병수술비 (11가지)"], keys130 = Object.keys(s130);
   i130.add = keys130.length ? Math.max.apply(null, keys130.map(function(k){ return s130[k]; })) : 0;
@@ -2495,7 +2535,7 @@ function custTiles(){
         + '<div class="a n">최대 ' + won(mx) + '</div>' });
     });
     g.items.filter(function(it){ return +it.add > 0 && !used[it.n]; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || cycTerm(it.n) || {}, when = t.when || EASY[it.n] || '';
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || surgTerm(it.n) || cycTerm(it.n) || {}, when = t.when || EASY[it.n] || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : ''; }
       out.push({ v: +it.add, h: '<div class="g">' + ico(gi) + esc(gn) + (it.sub ? ' · ' + esc(it.sub) : '') + '</div><h3>' + esc(it.n) + (it.hosp ? '<span class="hpb">큰 병원</span>' : '') + '</h3>'
         + (when && !it.unv ? '<p>' + esc(when) + '</p>' : '<p>자세한 지급 조건은 상담 때 약관으로 설명드려요.</p>')
