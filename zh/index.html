@@ -997,13 +997,15 @@ var RANGES = {
 // 수술 한 번에 함께 나오는 수술비 (약관 확인 2026-11-01: 수술비Ⅱ 1~5종·질병/상해수술비·상급종합 수술비·130대질병수술비 모두 수술 1회당)
 // 중국어판: k·c130·SURG130 이름은 계산용이라 한국어 그대로, t·ex만 중국어.
 var SURG130 = { "특정31대": 500, "심장질환": 100, "뇌혈관질환": 100, "다빈도61대": 50, "편도염": 50, "백내장": 30, "관절염·생식기": 30, "후각특정질환": 30, "치핵": 20, "특정다빈도29대": 20, "유방의 장애": 10 };
+// 질병 예시의 종·대상은 2610 약관으로 확인(캡틴 2026-11-23): 별표38(1-5종) · 별표22(5대질환) · 별표21(32대) · 별표45(특정31대) · 별표29(1-7종)
+// isch: 허혈성심장질환(I20~I25) · bleed: 뇌출혈(I60~I62)이면 · d5: 5대질환(심장·뇌혈관·간·폐)이자 32대의 5대질병 · op: 관혈/비관혈 · s7: 1-7종 수술분류 · ex56: 질병수술비(특정5대·6대질병 제외)에서 빠지는 병
 var SURG_EX = [
-  { k: "질병", t: "因特定31大疾病做大手术", ex: "主动脉瘤·肝病·肺病·肾衰竭等", jong: 5, c130: "특정31대" },
-  { k: "질병", t: "心脏疾病手术", ex: "条款心脏疾病分类表中的疾病", jong: 4, c130: "심장질환" },
-  { k: "질병", t: "脑血管疾病手术", ex: "脑动脉瘤·脑出血等", jong: 5, c130: "뇌혈관질환" },
-  { k: "질병", t: "高频疾病手术", ex: "良性肿瘤·甲状腺疾病·鼻窦炎等", jong: 3, c130: "다빈도61대" },
-  { k: "질병", t: "扁桃体炎手术", ex: "常见手术", jong: 2, c130: "편도염" },
-  { k: "질병", t: "白内障手术", ex: "上了年纪常见的手术", jong: 1, c130: "백내장" },
+  { k: "질병", t: "肝病大手术", ex: "开腹切除部分肝脏的手术（特定31大·5大疾病）", jong: 4, c130: "특정31대", d5: 1, op: "관혈" },
+  { k: "질병", t: "心绞痛·心肌梗死支架手术", ex: "将导管插入血管把血管撑开的手术（导管介入）", jong: 3, c130: "심장질환", isch: 1, d5: 1, op: "비관혈" },
+  { k: "질병", t: "脑出血·脑动脉瘤手术", ex: "打开头部进行的手术（开颅术）", jong: 5, c130: "뇌혈관질환", bleed: 1, d5: 1, op: "관혈" },
+  { k: "질병", t: "甲状腺结节手术", ex: "切开甲状腺的手术（高频疾病）", jong: 3, c130: "다빈도61대", op: "관혈" },
+  { k: "질병", t: "扁桃体切除手术", ex: "因扁桃体炎切除扁桃体", jong: 1, c130: "편도염", s7: 1 },
+  { k: "질병", t: "白内障手术", ex: "上了年纪常见的手术", jong: 1, c130: "백내장", s7: 1, ex56: 1 },
   // 상해: 약관 별표38(1-5종 수술분류표Ⅱ) — 사지골·사지관절 관혈수술 2종, 근·건·인대·연골 관혈수술 1종, 척추·골반 관혈수술 3종
   // frac: 골절 진단비가 함께 나오는 예시, nf: 신골절치료비 지급률(별표39, 수술한 골절/그 외)
   { k: "상해", t: "手腕骨折手术", ex: "摔倒时用手撑地而骨折", jong: 2, frac: 1, nf: 18 },
@@ -1241,6 +1243,21 @@ function careTerm(n){
 }
 // 신골절치료비: 약관 별표39 지급률(2026-10-27 분석,  2_자료/회사자료/신골절치료비_분석.md)
 // 자동차사고변호사선임비용(Ⅲ)(변호사선임현물급부선택가능): 캡틴 캡처 약관(2026-11-17) 기준 — 1사고마다 가입금액 한도로 비용을 주거나 변호사 선임을 현물로 제공
+// 수술비 특약 지급 조건 (통합간편건강보험2610 약관, 캡틴 2026-11-23 '수술비 특약 전부 학습')
+function surgTerm(n){
+  var s = String(n).replace(/\s/g, ""), cut = /감액/.test(s) ? "" : " · 投保1年内给付50%", m;
+  if (/^종합병원질병수술비/.test(s)) return { when: "因疾病在综合医院（医疗法规定的综合医院 · 也包括上级综合医院）做手术时，给付保额", note: "同一时间多项手术只给付1次" + cut };
+  if (/^종합병원상해수술비/.test(s)) return { when: "因受伤在综合医院（医疗法规定的综合医院 · 也包括上级综合医院）做手术时，给付保额", note: "同一意外多项手术只给付1次" };
+  if (/^골절(\(치아파절제외\))?수술비Ⅱ/.test(s)) return { when: "因受伤发生条款骨折分类表中的骨折" + (/치아파절제외/.test(s) ? "（牙齿折断除外）" : "") + "并做手术时，给付保额", note: "同一意外多项骨折手术只给付1次" };
+  if ((m = s.match(/^질병수술비\(특정(\d)대질병제외\)/))) return { when: "因疾病做手术时给付保额（特定" + m[1] + "大疾病除外：" + (m[1] === "2" ? "鸡眼·麦粒肿·结膜炎·外耳炎·耳痛" : "白内障·鼻炎·鼻息肉·皮肤囊肿·鸡眼·血管瘤" + (m[1] === "6" ? "·麦粒肿·结膜炎·外耳炎·耳痛" : "") + " · 大肠息肉内镜切除") + "）", note: "同一时间多项手术只给付1次" + cut };
+  if (/뇌출혈수술비/.test(s)) return { when: "因脑出血（I60~I62）做手术时，每次手术给付保额", note: cut ? "投保1年内给付50%" : "无减额" };
+  if (/뇌혈관질환수술비/.test(s)) return { when: "因脑血管疾病（I60~I69）做手术时，每次手术给付保额", note: cut ? "投保90天内给付10% · 1年内给付50%" : "无减额" };
+  if (/허혈성심장질환수술비/.test(s)) return { when: "因缺血性心脏病（心绞痛·心肌梗死等 I20~I25）做手术时，每次手术给付保额", note: cut ? "投保90天内给付10% · 1年内给付50% · 支架等导管介入治疗也算手术" : "无减额" };
+  if (/5대질환.*수술비/.test(s)) return { when: "因5大疾病（心脏·脑血管·肝·肺疾病等）做手术时，每种疾病的开放性·非开放性手术各每年给付1次保额", note: "开放性手术（관혈）= 切开皮肤进行的手术 · 非开放性手术（비관혈）= 内镜·导管等" + cut };
+  if (/\d+대질병관혈수술비/.test(s)) return { when: "因32大疾病（5大·9大·14大·4大疾病）做开放性手术（관혈）时，每种疾病每年给付1次保额", note: "内镜·导管等非开放性手术（비관혈）不给付" + cut };
+  if (/1-7종/.test(s) && /수술/.test(s)) return { when: "接受条款1-7类手术分类表（附表29）中的手术时，按类别给付保额（一年最多3次）", note: "类别按每个手术代码确定 · 扁桃体·白内障为第1类" };
+  return null;
+}
 function isLawyerHyun(n){ var s = String(n).replace(/\s/g, ""); return /변호사/.test(s) && /현물/.test(s); }
 function lawyerHyunNow(){ return ((M.d && M.d.conList) || []).some(function(c){ return c.rows && c.rows.some(function(r){ return isLawyerHyun(r.n + "|" + r.sig); }); }); }
 function lawyerTerm(n){
@@ -1459,7 +1476,7 @@ function surgRows(){
       var dis = /질병/.test(nm), inj = /상해|재해/.test(nm);
       if (e.k === "질병" ? inj && !dis : dis && !inj) return;
       if (e.jong && !/암|이식|로봇|특정|\d+대|비뇨|부인|여성|남성|치아|골절|화상|뇌|심장|허혈|순환/.test(nm)) {
-        if ((m = nm.match(/(\d)[-~～](\d)종/))) { if (e.jong >= +m[1] && e.jong <= +m[2]) out.push(["其他保险 " + m[1] + "~" + m[2] + "类手术金※", +r.amt, +r.amt]); }
+        if ((m = nm.match(/(\d)[-~～](\d)종/))) { if (e.jong >= +m[1] && e.jong <= +m[2]) out.push(["其他保险 " + m[1] + "~" + m[2] + "类手术金※（保额 " + won(+r.amt) + " · 各类别金额请查看保单）", 0, 0, 0, "chk"]); } // 캡틴 2026-11-23: 보장분석엔 금액이 하나뿐이라 종별 금액을 몰라 합계에서 뺀다(작은 수술이 크게 잡히던 문제)
         else if ((m = nm.match(/(\d)종/)) && +m[1] === e.jong) out.push(["其他保险 第" + m[1] + "类手术金", +r.amt, +r.amt]);
       }
       // 지금 가입한 메리츠 등 'N대 질병수술비(분류)' — 82대·130대 등 이름의 분류가 이 예시와 같으면 더한다
@@ -1468,13 +1485,35 @@ function surgRows(){
         if (hit) out.push(["现有保险 " + m[1] + "种疾病手术金（" + cat + "）", +r.amt, +r.amt]);
       }
       if (e.k === "질병" && e.c130 === "뇌혈관질환" && /뇌혈관질환수술/.test(nm)) out.push(["脑血管疾病手术金", +r.amt, +r.amt]);
-      if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? "缺血性心脏病手术金（如为缺血性）" : "心脏疾病手术金", +r.amt, +r.amt]);
+      if (e.k === "질병" && e.c130 === "심장질환" && /(허혈성)?심장질환수술/.test(nm)) out.push([/허혈/.test(nm) ? (e.isch ? "缺血性心脏病手术金" : "缺血性心脏病手术金（如为缺血性）") : "心脏疾病手术金", +r.amt, +r.amt]);
     });
     return out;
   };
+  // 제안 설계서의 그 밖의 수술비 특약 (2610 약관 확인 2026-11-23). 지금 가입분은 위 otherSurg가 보장분석에서 센다.
+  var propSurg = function(e){
+    var out = [];
+    M.all.forEach(function(it){
+      var a = +it.add || 0, nm = String(it.n || "").replace(/\s/g, ""), m;
+      if (!(a > 0) || /^(질병|상해) \d종 수술비$/.test(it.n)) return;
+      if (e.k === "질병") {
+        if (/^종합병원질병수술비/.test(nm)) out.push(["🏥 综合医院疾病手术金", a, 0, 1]);
+        else if ((m = nm.match(/^질병수술비\(특정(\d)대질병제외\)/))) { if (!(e.ex56 && /[56]/.test(m[1])) && !PROP_MAP.some(function(p){ return p[0].test(nm); })) out.push(["疾病手术金（特定" + m[1] + "大疾病除外）", a, 0]); }
+        else if (/뇌출혈수술비/.test(nm)) { if (e.bleed) out.push(["脑出血手术金（如为脑出血）", a, 0]); }
+        else if (/뇌혈관질환수술비/.test(nm)) { if (e.c130 === "뇌혈관질환") out.push(["脑血管疾病手术金", a, 0]); }
+        else if (/허혈성심장질환수술비/.test(nm)) { if (e.isch) out.push(["缺血性心脏病手术金", a, 0]); }
+        else if (/5대질환.*수술비/.test(nm)) { var nb = /비관혈/.test(nm), hb = /관혈/.test(nm); if (e.d5 && (!hb || (nb ? e.op === "비관혈" : e.op === "관혈"))) out.push(["5大疾病手术金" + (hb ? (nb ? "（非开放性）" : "（开放性）") : ""), a, 0]); }
+        else if ((m = nm.match(/(\d+)대질병관혈수술비/))) { if (e.d5 && e.op === "관혈") out.push(m[1] === "5" ? ["32大疾病开放性手术金（5大疾病）", a, 0] : m[1] === "32" ? ["32大疾病开放性手术金 · 请确认具体金额", 0, 0, 0, "chk"] : null); }
+        else if (/1-7종/.test(nm) && !/상해/.test(nm)) { if (e.s7) { m = nm.match(/1-7종.*?(\d)종/); out.push(m ? (+m[1] === e.s7 ? ["1-7类手术金（第" + m[1] + "类）", a, 0] : null) : ["1-7类手术金 · 请确认第" + e.s7 + "类金额", 0, 0, 0, "chk"]); } }
+      } else if (e.jong) {
+        if (/^종합병원상해수술비/.test(nm)) out.push(["🏥 综合医院意外手术金", a, 0, 1]);
+        else if (e.frac && /^골절(\(치아파절제외\))?수술비Ⅱ/.test(nm)) out.push(["骨折手术金", a, 0]);
+      }
+    });
+    return out.filter(Boolean);
+  };
   return SURG_EX.map(function(e){
     var parts = e.k === "질병"
-      ? [["第" + e.jong + "类手术金", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130种（" + zt(e.c130) + "）", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["疾病手术金", tv("질병 수술비"), tn("질병 수술비")], ["🏥 上级综合手术金", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
+      ? [["第" + e.jong + "类手术金", tv("질병 " + e.jong + "종 수술비"), tn("질병 " + e.jong + "종 수술비")], ["130种（" + zt(e.c130) + "）", has130 ? (DATA.surg130 || SURG130)[e.c130] || 0 : 0, 0], ["疾病手术金", tv("질병 수술비") - (e.ex56 ? +(M.byName["질병 수술비"] || {}).ex56 || 0 : 0), tn("질병 수술비")], ["🏥 上级综合手术金", tv("상급종합병원 질병수술비"), tn("상급종합병원 질병수술비"), 1]]
       : (e.jong ? [["第" + e.jong + "类手术金", tv("상해 " + e.jong + "종 수술비"), tn("상해 " + e.jong + "종 수술비")], ["意外手术金", tv("상해 수술비"), tn("상해 수술비")], ["🏥 上级综合手术金", tv("상급종합병원 상해수술비"), tn("상급종합병원 상해수술비"), 1]] : [])
         .concat(e.frac ? [["骨折诊断金", fracDx(tv), fracDx(tn)]] : [])
         .concat(e.nf ? [["新骨折治疗金 " + e.nf + "%", newFrac(tv) * e.nf / 100, newFrac(tn) * e.nf / 100]] : []);
@@ -1484,7 +1523,7 @@ function surgRows(){
       if (a > 0 && ta) parts.push([q[1], ta.surg, n > 0 && t[n] ? t[n].surg : 0, q[2]]);
       else if (a > 0) parts.push([q[1] + " · 保额 " + won(a) + " 请确认给付表", 0, 0, q[2], "chk"]); // 지급표에 없는 가입금액: 합계에서 빼고 표시만
     });
-    parts = parts.concat(otherSurg(e)).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
+    parts = parts.concat(propSurg(e), otherSurg(e)).filter(function(x){ return x[1] > 0 || x[4] === "chk"; });
     var tot = parts.reduce(function(s, x){ return s + x[1]; }, 0), now = parts.reduce(function(s, x){ return s + x[2]; }, 0);
     return { e: e, parts: parts, tot: tot, now: now };
   });
@@ -1512,7 +1551,7 @@ function surgTable(pt, only){
          : '<div class="sgp2"><span class="sgno">' + (M.d.noProp ? '现有保险中没有适用于此手术的保障' : '没有适用于此手术的保障') + '</span></div>'
            + '<div class="sgt"><small>现有</small><b class="sgnob">无</b></div></div>');
   });
-  var starNote = star ? ' ※其他保险的1~5类手术金按保障分析中的保额计算。各公司各类别金额不同，请务必查看保单。' : '';
+  var starNote = star ? ' ※其他保险的1~5类手术金在保障分析中只显示一个金额，无法知道各类别是多少。因此没有计入合计，只列出了名称。请务必查看保单。' : '';
   return h + '</div>' + (pt ? (star ? '<div class="sns">' + starNote.trim() + '</div>' : '') : '<div class="note">类别（1~5类）以条款手术分类表为准，实际手术的类别因手术而异。同一疾病·同一意外多次手术时，疾病·意外手术金和上级综合手术金只给付1次（疾病满365天后可再次）。骨折诊断金·新骨折治疗金按每次事故，新骨折治疗金按骨折部位和是否手术给付保额的一定百分比。特定循环系统疾病综合治疗金的手术金额以各保额对应的条款给付表为准，一年总额以保额为限。' + starNote + '</div>');
 }
 
@@ -1661,7 +1700,7 @@ function renderPt(){
       five.forEach(function(it){ it._grouped = true; });
     });
     g.items.filter(function(it){ return +it.add > 0 && !it._grouped; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || cycTerm(it.n) || {}, easy = EASY[it.n];
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || surgTerm(it.n) || cycTerm(it.n) || {}, easy = EASY[it.n];
       var when = t.when || easy || '', note = t.note || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : '此保额的各项目金额请查看条款给付表。'; }
       cards.push({ g: g, html: '<div class="rc' + (it.hosp ? ' hp' : '') + '"><div class="rch"><span class="rcg">' + g.icon + ' ' + esc(zt(g.name)) + '</span>' + payTag(it.n) + '</div>'
@@ -1681,7 +1720,7 @@ function renderPt(){
   }
 
   var sCon = (!M.grown.length && d.noProp && d.conList && d.conList.length) ? conSlides(kick, src) : [];
-  var sSurg = ('<div class="slide">' + kick('手术金') + '<h2>做一次手术能领<em>这么多</em></h2><p class="sub">1~5类手术金 + 130种疾病手术金 + 疾病·意外手术金 + 上级综合医院手术金（心脏·脑血管还包括循环系统综合治疗金的手术金额）全部相加的金额</p>' + surgTable(true, "질병") + src('类别（1~5类）以条款手术分类表为准，实际手术的类别因手术而异 · 投保1年以后 · 一年内手术2次以上时，按最高类别每年再给付1次plus手术金（第一次手术不给付）') + '</div>');
+  var sSurg = ('<div class="slide">' + kick('手术金') + '<h2>做一次手术能领<em>这么多</em></h2><p class="sub">该手术可领取的手术金特约（1~5类·130种·疾病手术金·上级综合/综合医院·5大疾病·脑血管/心脏手术金等，心脏·脑血管还包括循环系统综合治疗金的手术金额）全部相加的金额</p>' + surgTable(true, "질병") + src('类别（1~5类）以条款手术分类表为准，实际手术的类别因手术而异 · 投保1年以后 · 一年内手术2次以上时，按最高类别每年再给付1次plus手术金（第一次手术不给付）') + '</div>');
   var sInj = ('<div class="slide">' + kick('意外·骨折') + '<h2>受伤时能领<em>这么多</em></h2><p class="sub">常见意外手术 · 骨折诊断金 · 新骨折治疗金全部相加的金额</p>' + surgTable(true, "상해") + src('类别（1~5类）以条款手术分类表为准（四肢骨切开手术第2类，韧带·肌腱第1类，脊柱·骨盆第3类）· 骨折诊断金·新骨折治疗金按每次事故 · 新骨折治疗金%以条款给付率表为准（手术的骨折/其他）· 实际给付以条款为准') + '</div>');
   // 5. 장 순서(캡틴 2026-11-22): 표지 → 암 치료 예시 → 뇌·심장(통계·범위·치료 예시) → 수술비·상해 → 간병인 → 마무리 → 제안 담보 하나씩 보기(맨 끝)
   var jsC = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) < 0; }), jsB = M.js.filter(function(x){ return JOURNEYS_BASE.indexOf(x.j) >= 0; });
@@ -1805,6 +1844,37 @@ function fillGaps(){
     if (cw && cw.children.length === 1) cw.style.columnCount = 1; // 표가 하나만 남으면 오른쪽 칸이 비지 않게 전체 폭으로
     if (!ncw.children.length) { ncw.previousElementSibling.remove(); ncw.remove(); } // 표는 다 들어가고 아래 안내만 넘어온 쪽
   })(pg);
+  // 요약형 수술비 표: 넘치면 아래 줄부터 다음 쪽으로(다른 보험 수술비가 많을 때)
+  [].slice.call(document.querySelectorAll('#vSum .page')).forEach(function(pg){
+    var sg = pg.querySelector('.sg:not(.sgp)'), cur4 = pg, guard = 0;
+    while (sg && contentH0(cur4) > roomS() && sg.children.length > 1 && guard++ < 6) {
+      var np2 = document.createElement('div'); np2.className = 'page';
+      np2.innerHTML = cur4.querySelector('.ph').outerHTML + '<div class="st"><h2>🔪 做一次手术能领这么多（续）</h2></div><div class="sg"></div>' + cur4.querySelector('.pf').outerHTML;
+      cur4.parentNode.insertBefore(np2, cur4.nextSibling);
+      var ns2 = np2.querySelector('.sg');
+      while (contentH0(cur4) > roomS() && sg.children.length > 1) ns2.insertBefore(sg.lastElementChild, ns2.firstChild);
+      var nt = cur4.querySelector('.sg + .note'); if (nt && contentH0(cur4) > roomS()) ns2.after(nt);
+      cur4 = np2; sg = ns2;
+    }
+  });
+  var pages = [].slice.call(document.querySelectorAll('#vSum .page'));
+  pages.forEach(function(pg, i){ var s = pg.querySelector('.pf span:last-child'); if (s) s.textContent = (i + 1) + ' / ' + pages.length; });
+  run(pages, fillers(false), roomS, '.pf');
+  // PT 수술비·상해 장: 다른 보험 담보가 많아 넘치면 아래 줄부터 '이어서' 장으로 넘긴다
+  (function splitSurg(){
+    [].slice.call(document.querySelectorAll('#stage .slide')).forEach(function(sl){
+      var sg = sl.querySelector('.sg.sgp'), guard = 0, cur3 = sl;
+      while (sg && contentH0(cur3) > roomP() && sg.children.length > 1 && guard++ < 6) {
+        var nx = document.createElement('div'); nx.className = 'slide';
+        nx.innerHTML = cur3.querySelector('.kick').outerHTML.replace(/<\/span>$|<\/div>$/, function(m){ return m; }) + '<div class="sg sgp"></div>' + (cur3.querySelector('.src') ? cur3.querySelector('.src').outerHTML : '');
+        var kk = nx.querySelector('.kick'); if (!/续/.test(kk.textContent)) kk.textContent = kk.textContent + '（续）';
+        cur3.parentNode.insertBefore(nx, cur3.nextSibling);
+        var ns = nx.querySelector('.sg');
+        while (contentH0(cur3) > roomP() && sg.children.length > 1) ns.insertBefore(sg.lastElementChild, ns.firstChild);
+        cur3 = nx; sg = ns;
+      }
+    });
+  })();
   var pages = [].slice.call(document.querySelectorAll('#vSum .page'));
   pages.forEach(function(pg, i){ var s = pg.querySelector('.pf span:last-child'); if (s) s.textContent = (i + 1) + ' / ' + pages.length; });
   run(pages, fillers(false), roomS, '.pf');
@@ -2115,12 +2185,13 @@ function buildFromPdf(ana, prop, who){
     for (var i = 0; i < PROP_MAP.length; i++) if (PROP_MAP[i][0].test(nm)) {
       var it = byN[PROP_MAP[i][1]];
       if (PROP_MAP[i][2]) it.add = Math.max(+it.add || 0, x.amt); else { it.add = (+it.add || 0) + x.amt; (it.parts = it.parts || []).push(x.amt); }
+      if (/특정[56]대질병제외/.test(nm.replace(/\s/g, ""))) it.ex56 = (+it.ex56 || 0) + x.amt; // 백내장 등은 이 담보에서 빠짐(수술 예시에서 뺀다)
       if (!it.rider) { it.rider = nm; it.unv = !TERMS[nm]; }
       if (renew) it.renew = 1;
       matched++; return;
     }
     var sp = /다빈치로봇암수술비\(특정암\)/.test(nm);
-    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, renew: renew, unv:!sp && !fracTerm(nm) && !lawyerTerm(nm) });
+    extraNew.push({ n: nm, now: 0, rec: 0, add: x.amt, rider: sp ? "다빈치로봇 암수술비(특정암)" : nm, renew: renew, unv:!sp && !fracTerm(nm) && !lawyerTerm(nm) && !surgTerm(nm) });
   });
   var i130 = byN["130대 질병수술비 (11가지)"], keys130 = Object.keys(s130);
   i130.add = keys130.length ? Math.max.apply(null, keys130.map(function(k){ return s130[k]; })) : 0;
@@ -2441,7 +2512,7 @@ function custTiles(){
         + '<div class="a n">最高 ' + won(mx) + '</div>' });
     });
     g.items.filter(function(it){ return +it.add > 0 && !used[it.n]; }).forEach(function(it){
-      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || cycTerm(it.n) || {}, when = t.when || EASY[it.n] || '';
+      var t = TERMS[it.rider] || TERMS[it.n] || careTerm(it.n) || fracTerm(it.n) || lawyerTerm(it.n) || surgTerm(it.n) || cycTerm(it.n) || {}, when = t.when || EASY[it.n] || '';
       if (UW[it.n]) { var ut = utFor(it.n, it); when = ut ? UW[it.n](ut) : ''; }
       out.push({ v: +it.add, h: '<div class="g">' + ico(gi) + esc(zt(g.name)) + (it.sub ? ' · ' + esc(zt(it.sub)) : '') + '</div><h3>' + zb(it.n) + (it.hosp ? '<span class="hpb">大医院</span>' : '') + '</h3>'
         + (when && !it.unv ? '<p>' + esc(when) + '</p>' : '<p>详细给付条件将在咨询时根据条款为您说明。</p>')
@@ -2725,7 +2796,7 @@ if (CUST) (async function(){
   try { DATA = /^#c=/.test(location.hash) ? await unpackData(location.hash.slice(3)) : await openShort(SHORT_ID, location.hash.slice(1)); renderCust(); window.scrollTo(0, 0); }
   catch (e) { document.getElementById("vCust").innerHTML = '<div class="cv"><div class="err"><h2>无法打开建议书</h2><p>' + (e && e.message === "gone" ? '链接保存期限（90天）已过。请向负责顾问索取新链接。' : '链接可能中途被截断，或手机浏览器版本过旧。请再次点击收到的完整链接，或联系负责顾问。') + '</p></div></div>'; }
 })();
-renderAll(); buildForm(); pdfBox(true);
+renderAll(); buildForm();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ renderAll(); }); // 글꼴을 다 불러온 뒤 높이를 다시 재서 빈 곳 채우기
 </script>
 </body>
