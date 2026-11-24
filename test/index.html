@@ -2144,7 +2144,7 @@ function parseProposal(pages){
       var cells = l.t.split("|").map(function(c){ return c.trim(); }).filter(Boolean), ai = -1;
       cells.forEach(function(c, i){ if (ai < 0 && i > 0 && /원$/.test(c.replace(/\s/g, "")) && amtMan(c) !== null) ai = i; });
       var near = function(){ return lines.filter(function(o, oi){ return oi !== li && Math.abs(o.y - l.y) <= 7 && o.x >= 95 && o.x < 400; }); }, sup = false;
-      if (ai < 0 && cells.length === 2 && /^(?:[가-힣\/\s]*\s)?\d{1,4}$/.test(cells[0]) && /^[\d,]+$/.test(cells[1])) { // 간병인지원형: 번호 | 보험료, 가입금액은 위·아래 줄에 "간병인지원 / 또는 5천원"
+      if (ai < 0 && cells.length === 2 && /^(?:[가-힣\/\s]*\s)?\d{1,4}(?:\s.*)?$/.test(cells[0]) && /^[\d,]+$/.test(cells[1])) { // 한 줄형(번호 담보명 | 보험료)도 — 캡틴 2026-11-24 운전자보험 간병인 270번 // 간병인지원형: 번호 | 보험료, 가입금액은 위·아래 줄에 "간병인지원 / 또는 5천원"
         var side = near().map(function(o){ return o.t; }).join("|");
         if (/간병인지원/.test(side) && (m = side.match(/또는\s*([\d,]+\s*[천백만억]*\s*원)/))) { cells = [cells[0], m[1], cells[1]]; ai = 1; sup = true; }
       }
