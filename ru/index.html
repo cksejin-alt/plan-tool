@@ -1833,7 +1833,7 @@ function fillGaps(){
       pg.parentNode.insertBefore(np, pg.nextSibling);
       var top = function(el){ np.insertBefore(el, np.querySelector('.ph').nextElementSibling); }, nrg = null, g2 = 0;
       while (contentH0(pg) > roomS() && g2++ < 40) {
-        var last = pg.querySelector('.pf').previousElementSibling; if (!last || last.classList.contains('ph')) break;
+        var last = pg.querySelector('.pf').previousElementSibling; if (!last || last.classList.contains('ph') || last.previousElementSibling.classList.contains('ph')) break; // 러시아어판: 한 칸만 남으면 그대로 둔다(그 칸이 한 쪽보다 크면 끝없이 넘기던 문제)
         if (last === rg && rg.children.length > 1) { if (!nrg) { nrg = document.createElement('div'); nrg.className = 'rgrid'; top(nrg); } nrg.insertBefore(rg.lastElementChild, nrg.firstChild); continue; }
         top(last);
       }
